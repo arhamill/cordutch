@@ -25,12 +25,22 @@ class AuctionContract : Contract {
                 "The asset must have a description" using !output.assetDescription.isEmpty()
                 "The owner must not be a bidder" using (output.owner !in output.bidders)
                 "There must be at least one bidder" using !output.bidders.isEmpty()
-                "The start price should be greater than the reserve" using (output.startPrice > output.reservePrice)
-                "There should be at least one decrement" using
-                        (output.decrement < (output.startPrice - output.reservePrice))
-                val currency = output.startPrice.token
-                "All prices should be in the same currency" using
-                        (output.reservePrice.token == currency && output.decrement.token == currency)
+                "The start price should be greater than zero" using
+                        (output.price > Amount(0, output.price.token))
+                val requiredSigners = output.participants.map { it.owningKey }.toSet()
+                "All participants must sign" using (command.signers.toSet() == requiredSigners)
+            }
+            is Commands.Decrease -> {
+                requireThat {
+                    "An auction decrease transaction must have one input state." using (tx.inputStates.size == 1)
+                    "An auction decrease transaction must have one output state." using (tx.outputStates.size == 1)
+                    val input = tx.inputStates.single() as AuctionState
+                    val output = tx.outputStates.single() as AuctionState
+                    "Only the price may change" using (output == input.withNewPrice(output.price))
+                    "The price must decrease" using (output.price < input.price)
+                    "The new price must be greater than zero" using (output.price > Amount(0, output.price.token))
+                    "The owner must sign" using (listOf(output.owner.owningKey) == command.signers)
+                }
             }
         }
     }
@@ -38,5 +48,6 @@ class AuctionContract : Contract {
     // Used to indicate the transaction's intent.
     interface Commands : CommandData {
         class Create : TypeOnlyCommandData(), Commands
+        class Decrease : TypeOnlyCommandData(), Commands
     }
 }

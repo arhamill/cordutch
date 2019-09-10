@@ -9,22 +9,21 @@ import java.util.*
 
 /**
  * A state representing a Dutch Auction where [owner] is selling an [assetDescription].
- * The price begins at [startPrice] at [startTime] and decreases by [decrement] every [decrementPeriod] seconds.
+ * The price begins at [price] and can be decremented by the [owner]
  * The auction ends either when a successful bid is placed by one of the [bidders] or the owner manually ends it
- * (providing the price is below the [reservePrice]).
  */
 @BelongsToContract(AuctionContract::class)
 data class AuctionState(
         val assetDescription: String,
         val owner: Party,
         val bidders : List<Party>,
-        val startPrice : Amount<Currency>,
-        val startTime : Instant,
-        val decrement : Amount<Currency>,
-        val decrementPeriod : Long,
-        val reservePrice : Amount<Currency>,
+        val price : Amount<Currency>,
         override val linearId: UniqueIdentifier = UniqueIdentifier()
 ) : LinearState {
         override val participants: List<AbstractParty>
                 get() = bidders + owner
+
+        fun withNewPrice(newPrice: Amount<Currency>): AuctionState {
+                return copy(price = newPrice)
+        }
 }
