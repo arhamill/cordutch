@@ -13,6 +13,13 @@ class AuctionContract : Contract {
         const val ID = "com.template.contracts.AuctionContract"
     }
 
+    // Used to indicate the transaction's intent.
+    interface Commands : CommandData {
+        class Create : TypeOnlyCommandData(), Commands
+        class Decrease : TypeOnlyCommandData(), Commands
+        class End : TypeOnlyCommandData(), Commands
+    }
+
     // A transaction is valid if the verify() function of the contract of all the transaction's input and output states
     // does not throw an exception.
     override fun verify(tx: LedgerTransaction) {
@@ -42,12 +49,14 @@ class AuctionContract : Contract {
                     "The owner must sign" using (listOf(output.owner.owningKey) == command.signers)
                 }
             }
+            is Commands.End -> {
+                requireThat {
+                    "An end auction transaction must have one input state." using (tx.inputStates.size == 1)
+                    val input = tx.inputStates.single() as AuctionState
+                    "An end auction transaction must have no outputs" using tx.outputStates.isEmpty()
+                    "The owner must sign" using (listOf(input.owner.owningKey) == command.signers)
+                }
+            }
         }
-    }
-
-    // Used to indicate the transaction's intent.
-    interface Commands : CommandData {
-        class Create : TypeOnlyCommandData(), Commands
-        class Decrease : TypeOnlyCommandData(), Commands
     }
 }
