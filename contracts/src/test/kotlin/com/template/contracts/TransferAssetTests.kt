@@ -92,6 +92,18 @@ class TransferAssetTests {
     }
 
     @Test
+    fun mustBeUnlocked() {
+        ledgerServices.ledger {
+            transaction {
+                input(AuctionableAssetContract.ID, validAsset.copy(locked = true))
+                output(AuctionableAssetContract.ID, validAsset.withNewOwner(CHARLIE.party))
+                command(validAsset.owner.owningKey, AuctionableAssetContract.Commands.Transfer())
+                this `fails with` "The asset must be unlocked"
+            }
+        }
+    }
+
+    @Test
     fun mustBeSignedByOwner() {
         ledgerServices.ledger {
             transaction {

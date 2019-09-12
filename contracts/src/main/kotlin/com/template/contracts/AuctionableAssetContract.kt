@@ -13,6 +13,7 @@ class AuctionableAssetContract : Contract {
     interface Commands : CommandData {
         class Issue : TypeOnlyCommandData(), Commands
         class Transfer : TypeOnlyCommandData(), Commands
+        class Consume: TypeOnlyCommandData(), Commands
     }
 
     override fun verify(tx: LedgerTransaction) {
@@ -32,9 +33,18 @@ class AuctionableAssetContract : Contract {
                 "An transfer transaction should only create one output state." using (tx.outputStates.size == 1)
                 val input = tx.inputStates.single() as AuctionableAsset
                 val output = tx.outputStates.single() as AuctionableAsset
+                "The asset must be unlocked" using !input.locked
                 "Only the owner property may change." using (output == input.withNewOwner(output.owner))
                 "The owner property must change in a transfer." using (input.owner != output.owner)
                 "The old owner must sign" using (command.signers == listOf(input.owner.owningKey))
+            }
+            is Commands.Consume -> requireThat {
+                "A consume transaction should only consume one input state." using (tx.inputStates.size == 1)
+                "A consume transaction should have no output states" using tx.outputStates.isEmpty()
+                val input = tx.inputStates.single() as AuctionableAsset
+                "The asset must be unlocked" using !input.locked
+                val requiredSigners = input.participants.map { it.owningKey }.toSet()
+                "All participants must sign" using (command.signers.toSet() == requiredSigners)
             }
         }
     }
