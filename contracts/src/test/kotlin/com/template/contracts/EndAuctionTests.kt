@@ -1,6 +1,7 @@
 package com.template.contracts
 
 import com.template.states.AuctionState
+import net.corda.core.contracts.UniqueIdentifier
 import net.corda.finance.POUNDS
 import net.corda.testing.node.MockServices
 import net.corda.testing.node.ledger
@@ -10,7 +11,7 @@ class EndAuctionTests {
     private val ledgerServices = MockServices()
 
     private val auction = AuctionState(
-            assetDescription = "My car",
+            assetId = UniqueIdentifier(),
             owner = ALICE.party,
             bidders = listOf(BOB.party, CHARLIE.party),
             price = 10.POUNDS

@@ -1,6 +1,8 @@
 package com.template.contracts
 
 import com.template.states.AuctionState
+import com.template.states.AuctionableAsset
+import net.corda.core.contracts.UniqueIdentifier
 
 import net.corda.finance.POUNDS
 import net.corda.testing.node.MockServices
@@ -10,8 +12,14 @@ import org.junit.Test
 class CreateAuctionTests {
     private val ledgerServices = MockServices()
 
+    private val asset = AuctionableAsset(
+            description = "A big house",
+            owner = ALICE.party,
+            issuer = MEGACORP.party
+    )
+
     private val validAuction = AuctionState(
-            assetDescription = "My car",
+            assetId = asset.linearId,
             owner = ALICE.party,
             bidders = listOf(BOB.party, CHARLIE.party),
             price = 10.POUNDS
@@ -23,6 +31,9 @@ class CreateAuctionTests {
             transaction {
                 output(AuctionContract.ID, validAuction)
                 command(listOf(ALICE, BOB, CHARLIE).map { it.publicKey }, AuctionContract.Commands.Create())
+                input(AuctionableAssetContract.ID, asset)
+                output(AuctionableAssetContract.ID, asset.copy(locked = true))
+                command(asset.owner.owningKey, AuctionableAssetContract.Commands.Lock())
                 this.verifies()
             }
         }
@@ -35,7 +46,10 @@ class CreateAuctionTests {
                 input(AuctionContract.ID, validAuction)
                 output(AuctionContract.ID, validAuction)
                 command(listOf(ALICE, BOB, CHARLIE).map { it.publicKey }, AuctionContract.Commands.Create())
-                this `fails with` "No inputs should be consumed when creating an auction"
+                input(AuctionableAssetContract.ID, asset)
+                output(AuctionableAssetContract.ID, asset.copy(locked = true))
+                command(asset.owner.owningKey, AuctionableAssetContract.Commands.Lock())
+                this `fails with` "No auction inputs should be consumed when creating an auction"
             }
         }
     }
@@ -47,18 +61,10 @@ class CreateAuctionTests {
                 output(AuctionContract.ID, validAuction)
                 output(AuctionContract.ID, validAuction)
                 command(listOf(ALICE, BOB, CHARLIE).map { it.publicKey }, AuctionContract.Commands.Create())
-                this `fails with` "Only one output state should be created when creating an Auction."
-            }
-        }
-    }
-
-    @Test
-    fun mustHaveADescription() {
-        ledgerServices.ledger {
-            transaction {
-                output(AuctionContract.ID, validAuction.copy(assetDescription = ""))
-                command(listOf(ALICE, BOB, CHARLIE).map { it.publicKey }, AuctionContract.Commands.Create())
-                this `fails with` "The asset must have a description"
+                input(AuctionableAssetContract.ID, asset)
+                output(AuctionableAssetContract.ID, asset.copy(locked = true))
+                command(asset.owner.owningKey, AuctionableAssetContract.Commands.Lock())
+                this `fails with` "Only one auction output state should be created when creating an Auction."
             }
         }
     }
@@ -69,6 +75,9 @@ class CreateAuctionTests {
             transaction {
                 output(AuctionContract.ID, validAuction.copy(bidders = listOf(validAuction.owner)))
                 command(listOf(ALICE, BOB, CHARLIE).map { it.publicKey }, AuctionContract.Commands.Create())
+                input(AuctionableAssetContract.ID, asset)
+                output(AuctionableAssetContract.ID, asset.copy(locked = true))
+                command(asset.owner.owningKey, AuctionableAssetContract.Commands.Lock())
                 this `fails with` "The owner must not be a bidder"
             }
         }
@@ -80,6 +89,9 @@ class CreateAuctionTests {
             transaction {
                 output(AuctionContract.ID, validAuction.copy(bidders = listOf()))
                 command(listOf(ALICE, BOB, CHARLIE).map { it.publicKey }, AuctionContract.Commands.Create())
+                input(AuctionableAssetContract.ID, asset)
+                output(AuctionableAssetContract.ID, asset.copy(locked = true))
+                command(asset.owner.owningKey, AuctionableAssetContract.Commands.Lock())
                 this `fails with` "There must be at least one bidder"
             }
         }
@@ -91,6 +103,9 @@ class CreateAuctionTests {
             transaction {
                 output(AuctionContract.ID, validAuction.copy(price = 0.POUNDS))
                 command(listOf(ALICE, BOB, CHARLIE).map { it.publicKey }, AuctionContract.Commands.Create())
+                input(AuctionableAssetContract.ID, asset)
+                output(AuctionableAssetContract.ID, asset.copy(locked = true))
+                command(asset.owner.owningKey, AuctionableAssetContract.Commands.Lock())
                 this `fails with` "The start price should be greater than zero"
             }
         }
@@ -102,7 +117,35 @@ class CreateAuctionTests {
             transaction {
                 output(AuctionContract.ID, validAuction)
                 command(listOf(ALICE, BOB).map { it.publicKey }, AuctionContract.Commands.Create())
+                input(AuctionableAssetContract.ID, asset)
+                output(AuctionableAssetContract.ID, asset.copy(locked = true))
+                command(asset.owner.owningKey, AuctionableAssetContract.Commands.Lock())
                 this `fails with` "All participants must sign"
+            }
+        }
+    }
+
+    @Test
+    fun mustHaveAssetLockCommand() {
+        ledgerServices.ledger {
+            transaction {
+                output(AuctionContract.ID, validAuction)
+                command(listOf(ALICE, BOB, CHARLIE).map { it.publicKey }, AuctionContract.Commands.Create())
+                this `fails with` ""
+            }
+        }
+    }
+
+    @Test
+    fun mustHaveCorrectAssetId() {
+        ledgerServices.ledger {
+            transaction {
+                output(AuctionContract.ID, validAuction.copy(assetId = UniqueIdentifier()))
+                command(listOf(ALICE, BOB, CHARLIE).map { it.publicKey }, AuctionContract.Commands.Create())
+                input(AuctionableAssetContract.ID, asset)
+                output(AuctionableAssetContract.ID, asset.copy(locked = true))
+                command(asset.owner.owningKey, AuctionableAssetContract.Commands.Lock())
+                this `fails with` "Must have correct asset id"
             }
         }
     }

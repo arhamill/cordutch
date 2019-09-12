@@ -12,7 +12,7 @@ class DecreaseAuctionTests {
     private val ledgerServices = MockServices()
 
     private val auction = AuctionState(
-            assetDescription = "My car",
+            assetId = UniqueIdentifier(),
             owner = ALICE.party,
             bidders = listOf(BOB.party, CHARLIE.party),
             price = 10.POUNDS
@@ -57,7 +57,7 @@ class DecreaseAuctionTests {
         ledgerServices.ledger {
             transaction {
                 input(AuctionContract.ID, auction)
-                output(AuctionContract.ID, auction.copy(assetDescription = "My other car"))
+                output(AuctionContract.ID, auction.copy(assetId = UniqueIdentifier()))
                 command(auction.owner.owningKey, AuctionContract.Commands.Decrease())
                 this `fails with` "Only the price may change"
             }

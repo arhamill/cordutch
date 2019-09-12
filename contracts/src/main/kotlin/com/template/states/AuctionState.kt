@@ -1,6 +1,7 @@
 package com.template.states
 
 import com.template.contracts.AuctionContract
+import net.bytebuddy.implementation.bind.MethodDelegationBinder
 import net.corda.core.contracts.*
 import net.corda.core.identity.AbstractParty
 import net.corda.core.identity.Party
@@ -14,7 +15,7 @@ import java.util.*
  */
 @BelongsToContract(AuctionContract::class)
 data class AuctionState(
-        val assetDescription: String,
+        val assetId: UniqueIdentifier,
         val owner: Party,
         val bidders : List<Party>,
         val price : Amount<Currency>,

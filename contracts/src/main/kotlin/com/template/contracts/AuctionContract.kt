@@ -1,6 +1,7 @@
 package com.template.contracts
 
 import com.template.states.AuctionState
+import com.template.states.AuctionableAsset
 import net.corda.core.contracts.*
 import net.corda.core.transactions.LedgerTransaction
 
@@ -26,14 +27,16 @@ class AuctionContract : Contract {
         val command = tx.commands.requireSingleCommand <Commands>()
         when(command.value) {
             is Commands.Create -> requireThat {
-                "No inputs should be consumed when creating an auction" using tx.inputs.isEmpty()
-                "Only one output state should be created when creating an Auction." using (tx.outputs.size == 1)
-                val output = tx.outputStates.single() as AuctionState
-                "The asset must have a description" using !output.assetDescription.isEmpty()
+                "No auction inputs should be consumed when creating an auction" using tx.inputsOfType<AuctionState>().isEmpty()
+                "Only one auction output state should be created when creating an Auction." using (tx.outputsOfType<AuctionState>().size == 1)
+                val output = tx.outputsOfType<AuctionState>().single()
                 "The owner must not be a bidder" using (output.owner !in output.bidders)
                 "There must be at least one bidder" using !output.bidders.isEmpty()
                 "The start price should be greater than zero" using
                         (output.price > Amount(0, output.price.token))
+                tx.commands.requireSingleCommand<AuctionableAssetContract.Commands.Lock>()
+                val asset = tx.inputsOfType<AuctionableAsset>().singleOrNull()
+                "Must have correct asset id" using (output.assetId == asset?.linearId)
                 val requiredSigners = output.participants.map { it.owningKey }.toSet()
                 "All participants must sign" using (command.signers.toSet() == requiredSigners)
             }

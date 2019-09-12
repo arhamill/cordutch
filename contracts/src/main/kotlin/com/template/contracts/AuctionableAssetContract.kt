@@ -1,5 +1,6 @@
 package com.template.contracts
 
+import com.template.states.AuctionState
 import com.template.states.AuctionableAsset
 import net.corda.core.contracts.*
 import net.corda.core.transactions.LedgerTransaction
@@ -14,6 +15,7 @@ class AuctionableAssetContract : Contract {
         class Issue : TypeOnlyCommandData(), Commands
         class Transfer : TypeOnlyCommandData(), Commands
         class Consume: TypeOnlyCommandData(), Commands
+        class Lock: TypeOnlyCommandData(), Commands
     }
 
     override fun verify(tx: LedgerTransaction) {
@@ -45,6 +47,17 @@ class AuctionableAssetContract : Contract {
                 "The asset must be unlocked" using !input.locked
                 val requiredSigners = input.participants.map { it.owningKey }.toSet()
                 "All participants must sign" using (command.signers.toSet() == requiredSigners)
+            }
+            is Commands.Lock -> requireThat {
+                "A lock transaction must have one input asset" using (tx.inputsOfType<AuctionableAsset>().size == 1)
+                "A lock transaction must have one output asset" using (tx.outputsOfType<AuctionableAsset>().size == 1)
+                val inputAsset = tx.inputsOfType<AuctionableAsset>().single()
+                "The input asset must be unlocked" using !inputAsset.locked
+                val outputAsset = tx.outputsOfType<AuctionableAsset>().single()
+                "The output asset must be locked" using outputAsset.locked
+                "Only the lock property may be changed" using (outputAsset == inputAsset.copy(locked = true))
+                tx.commands.requireSingleCommand<AuctionContract.Commands.Create>()
+                "Must be signed by owner" using (command.signers == listOf(inputAsset.owner.owningKey))
             }
         }
     }
