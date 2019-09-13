@@ -54,10 +54,13 @@ class AuctionContract : Contract {
             }
             is Commands.End -> {
                 requireThat {
-                    "An end auction transaction must have one input state." using (tx.inputStates.size == 1)
-                    val input = tx.inputStates.single() as AuctionState
-                    "An end auction transaction must have no outputs" using tx.outputStates.isEmpty()
+                    "An end auction transaction must have one input state." using (tx.inputsOfType<AuctionState>().size == 1)
+                    val input = tx.inputsOfType<AuctionState>().single()
+                    "An end auction transaction must have no outputs" using tx.outputsOfType<AuctionState>().isEmpty()
                     "The owner must sign" using (listOf(input.owner.owningKey) == command.signers)
+                    tx.commands.requireSingleCommand<AuctionableAssetContract.Commands.Unlock>()
+                    val asset = tx.inputsOfType<AuctionableAsset>().singleOrNull()
+                    "Must have correct asset id" using (input.assetId == asset?.linearId)
                 }
             }
         }
