@@ -29,8 +29,7 @@ class AuctionableAssetContract : Contract {
                 val output = tx.outputStates.single() as AuctionableAsset
                 "The asset must have a description" using !output.description.isEmpty()
                 "The asset must be unlocked" using !output.locked
-                val requiredSigners = output.participants.map { it.owningKey }.toSet()
-                "All participants must sign" using (command.signers.toSet() == requiredSigners)
+                "Issuer must sign" using (command.signers == listOf(output.issuer.owningKey))
             }
             is Commands.Transfer -> requireThat {
                 "An transfer transaction should only consume one input state." using (tx.inputStates.size == 1)

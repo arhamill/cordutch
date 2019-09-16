@@ -13,7 +13,7 @@ data class AuctionableAsset(
         override val linearId: UniqueIdentifier = UniqueIdentifier()
 ) : LinearState {
     override val participants: List<AbstractParty>
-        get() = listOf(owner, issuer)
+        get() = listOf(owner)
 
     fun withNewOwner(newOwner: AbstractParty) : AuctionableAsset {
         return copy(owner = newOwner)

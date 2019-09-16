@@ -19,7 +19,7 @@ class IssueAssetTests {
         ledgerServices.ledger {
             transaction {
                 output(AuctionableAssetContract.ID, validAsset)
-                command(validAsset.participants.map { it.owningKey }, AuctionableAssetContract.Commands.Issue())
+                command(validAsset.issuer.owningKey, AuctionableAssetContract.Commands.Issue())
                 this.verifies()
             }
         }
@@ -72,12 +72,12 @@ class IssueAssetTests {
     }
 
     @Test
-    fun mustBeSignedByParticipants() {
+    fun mustBeSignedByIssuer() {
         ledgerServices.ledger {
             transaction {
                 output(AuctionableAssetContract.ID, validAsset)
                 command(MINICORP.publicKey, AuctionableAssetContract.Commands.Issue())
-                this `fails with` "All participants must sign"
+                this `fails with` "Issuer must sign"
             }
         }
     }
