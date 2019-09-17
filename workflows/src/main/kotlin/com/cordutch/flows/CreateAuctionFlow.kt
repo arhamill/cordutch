@@ -6,9 +6,7 @@ import com.cordutch.contracts.AuctionableAssetContract
 import com.cordutch.states.AuctionState
 import com.cordutch.states.AuctionableAsset
 import net.corda.core.contracts.*
-import net.corda.core.contracts.Requirements.using
 import net.corda.core.flows.*
-import net.corda.core.identity.AbstractParty
 import net.corda.core.identity.Party
 import net.corda.core.node.services.queryBy
 import net.corda.core.node.services.vault.QueryCriteria
@@ -18,7 +16,7 @@ import java.util.*
 
 @InitiatingFlow
 @StartableByRPC
-class CreateAuctionFlow(val assetId: UniqueIdentifier, val price: Amount<Currency>, val bidders: List<Party>)
+class CreateAuctionFlow(private val assetId: UniqueIdentifier, private val price: Amount<Currency>, private val bidders: List<Party>)
     : FlowLogic<SignedTransaction>() {
 
     @Suspendable
@@ -40,8 +38,7 @@ class CreateAuctionFlow(val assetId: UniqueIdentifier, val price: Amount<Currenc
                 )
         builder.verify(serviceHub)
         val initialTx = serviceHub.signInitialTransaction(builder, ourIdentity.owningKey)
-        val signers = (auction.participants + lockedAsset.owner).toSet()
-        val otherSessions = (signers - ourIdentity).map { initiateFlow(it) }
+        val otherSessions = auction.bidders.map { initiateFlow(it) }
         val signedTx = subFlow(CollectSignaturesFlow(initialTx, otherSessions))
         return subFlow(FinalityFlow(signedTx, otherSessions))
     }
