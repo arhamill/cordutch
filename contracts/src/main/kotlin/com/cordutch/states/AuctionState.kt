@@ -19,7 +19,7 @@ data class AuctionState(
         val price : Amount<Currency>,
         override val linearId: UniqueIdentifier = UniqueIdentifier()
 ) : LinearState {
-        override val participants: List<AbstractParty>
+        override val participants: List<Party>
                 get() = bidders + owner
 
         fun withNewPrice(newPrice: Amount<Currency>): AuctionState {

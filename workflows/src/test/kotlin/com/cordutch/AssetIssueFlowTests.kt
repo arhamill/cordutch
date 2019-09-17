@@ -40,7 +40,7 @@ class AssetIssueFlowTests {
         val future = a.startFlow(flow)
         val stx = future.getOrThrow()
         stx.verifyRequiredSignatures()
-        val output = stx.coreTransaction.outputStates.single() as AuctionableAsset
+        val output = stx.tx.outputStates.single() as AuctionableAsset
         assert(issuer == output.issuer) { "Initiator should be issuer" }
         assert(issuer == output.owner) { "Initiator should be owner" }
         assert(a.services.validatedTransactions.getTransaction(stx.id) != null) { "Transaction must be stored in vault" }

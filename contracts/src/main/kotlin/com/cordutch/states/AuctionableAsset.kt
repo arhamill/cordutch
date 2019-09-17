@@ -3,19 +3,20 @@ package com.cordutch.states
 import com.cordutch.contracts.AuctionableAssetContract
 import net.corda.core.contracts.*
 import net.corda.core.identity.AbstractParty
+import net.corda.core.identity.Party
 
 @BelongsToContract(AuctionableAssetContract::class)
 data class AuctionableAsset(
         val description: String,
-        val owner: AbstractParty,
-        val issuer: AbstractParty,
+        val owner: Party,
+        val issuer: Party,
         val locked: Boolean = false,
         override val linearId: UniqueIdentifier = UniqueIdentifier()
 ) : LinearState {
-    override val participants: List<AbstractParty>
+    override val participants: List<Party>
         get() = listOf(owner)
 
-    fun withNewOwner(newOwner: AbstractParty) : AuctionableAsset {
+    fun withNewOwner(newOwner: Party) : AuctionableAsset {
         return copy(owner = newOwner)
     }
 
