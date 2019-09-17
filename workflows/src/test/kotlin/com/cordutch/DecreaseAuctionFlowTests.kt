@@ -19,7 +19,7 @@ import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertFailsWith
 
-class DescreaseAuctionFlowTests {
+class DecreaseAuctionFlowTests {
     lateinit var mockNetwork: MockNetwork
     lateinit var a: StartedMockNode
     lateinit var b: StartedMockNode
