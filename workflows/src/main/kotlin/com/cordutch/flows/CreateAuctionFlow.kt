@@ -8,6 +8,7 @@ import com.cordutch.states.AuctionableAsset
 import net.corda.core.contracts.*
 import net.corda.core.flows.*
 import net.corda.core.identity.Party
+import net.corda.core.node.StatesToRecord
 import net.corda.core.node.services.queryBy
 import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.transactions.SignedTransaction
@@ -57,6 +58,6 @@ class CreateAuctionResponderFlow(val flowSession: FlowSession) : FlowLogic<Unit>
             }
         }
         val signedTx = subFlow(signedTransactionFlow)
-        subFlow(ReceiveFinalityFlow(flowSession, signedTx.id))
+        subFlow(ReceiveFinalityFlow(flowSession, signedTx.id, StatesToRecord.ALL_VISIBLE))
     }
 }
