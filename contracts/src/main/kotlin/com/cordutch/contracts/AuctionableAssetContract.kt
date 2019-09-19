@@ -46,7 +46,7 @@ class AuctionableAssetContract : Contract {
                 "A consume transaction should have no output states" using tx.outputStates.isEmpty()
                 val input = tx.inputStates.single() as AuctionableAsset
                 "The asset must be unlocked" using !input.locked
-                val requiredSigners = input.participants.map { it.owningKey }.toSet()
+                val requiredSigners = setOf(input.owner.owningKey, input.issuer.owningKey)
                 "All participants must sign" using (command.signers.toSet() == requiredSigners)
             }
             is Commands.Lock -> requireThat {

@@ -19,7 +19,7 @@ class ConsumeAssetTests {
         ledgerServices.ledger {
             transaction {
                 input(AuctionableAssetContract.ID, validAsset)
-                command(validAsset.participants.map { it.owningKey }, AuctionableAssetContract.Commands.Consume())
+                command(listOf(validAsset.issuer.owningKey, validAsset.owner.owningKey), AuctionableAssetContract.Commands.Consume())
                 this.verifies()
             }
         }
