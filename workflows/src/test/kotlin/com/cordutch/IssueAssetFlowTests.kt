@@ -1,6 +1,6 @@
 package com.cordutch
 
-import com.cordutch.flows.AssetIssueFlow
+import com.cordutch.flows.IssueAssetFlow
 import com.cordutch.states.AuctionableAsset
 import net.corda.core.contracts.TransactionVerificationException
 import net.corda.core.identity.CordaX500Name
@@ -15,7 +15,7 @@ import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertFailsWith
 
-class AssetIssueFlowTests {
+class IssueAssetFlowTests {
     lateinit var mockNetwork: MockNetwork
     lateinit var a: StartedMockNode
 
@@ -36,7 +36,7 @@ class AssetIssueFlowTests {
     fun flowCreatesAssetAndStoresInVault() {
         val issuer = a.info.chooseIdentityAndCert().party
         val description = "A big house"
-        val flow = AssetIssueFlow(description)
+        val flow = IssueAssetFlow(description)
         val future = a.startFlow(flow)
         val stx = future.getOrThrow()
         stx.verifyRequiredSignatures()
@@ -48,7 +48,7 @@ class AssetIssueFlowTests {
 
     @Test
     fun flowFailsWithEmptyDesc() {
-        val flow = AssetIssueFlow("")
+        val flow = IssueAssetFlow("")
         val future = a.startFlow(flow)
         assertFailsWith<TransactionVerificationException> ("Should fail contract verification if description is empty"){ future.getOrThrow() }
     }

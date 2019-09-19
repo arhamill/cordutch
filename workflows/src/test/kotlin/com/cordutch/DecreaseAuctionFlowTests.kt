@@ -47,7 +47,7 @@ class DecreaseAuctionFlowTests {
     }
 
     private fun createAuction() : SignedTransaction {
-        val assetFuture = a.startFlow(AssetIssueFlow("My asset"))
+        val assetFuture = a.startFlow(IssueAssetFlow("My asset"))
         mockNetwork.runNetwork()
         val asset = assetFuture.getOrThrow().tx.outputStates.single() as AuctionableAsset
 

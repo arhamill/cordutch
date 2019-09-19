@@ -56,7 +56,7 @@ class BidAuctionFlowTests {
     }
 
     private fun StartedMockNode.createAuction() : SignedTransaction {
-        val assetFuture = this.startFlow(AssetIssueFlow("My asset"))
+        val assetFuture = this.startFlow(IssueAssetFlow("My asset"))
         mockNetwork.runNetwork()
         val asset = assetFuture.getOrThrow().tx.outputStates.single() as AuctionableAsset
 

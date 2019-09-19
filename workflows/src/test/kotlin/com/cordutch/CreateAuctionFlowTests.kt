@@ -1,6 +1,6 @@
 package com.cordutch
 
-import com.cordutch.flows.AssetIssueFlow
+import com.cordutch.flows.IssueAssetFlow
 import com.cordutch.flows.CreateAuctionFlow
 import com.cordutch.flows.CreateAuctionResponderFlow
 import com.cordutch.states.AuctionState
@@ -8,7 +8,6 @@ import com.cordutch.states.AuctionableAsset
 import net.corda.core.contracts.StateRef
 import net.corda.core.contracts.TransactionVerificationException
 import net.corda.core.contracts.UniqueIdentifier
-import net.corda.core.identity.AbstractParty
 import net.corda.core.identity.CordaX500Name
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.utilities.getOrThrow
@@ -49,7 +48,7 @@ class CreateAuctionFlowTests {
     }
 
     private fun issueAsset(description: String) : SignedTransaction {
-        val future = a.startFlow(AssetIssueFlow(description))
+        val future = a.startFlow(IssueAssetFlow(description))
         mockNetwork.runNetwork()
         return future.getOrThrow()
     }

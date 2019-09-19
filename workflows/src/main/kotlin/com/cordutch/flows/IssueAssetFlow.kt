@@ -15,7 +15,7 @@ import net.corda.core.utilities.ProgressTracker
  */
 @InitiatingFlow
 @StartableByRPC
-class AssetIssueFlow(private val description: String) : FlowLogic<SignedTransaction>() {
+class IssueAssetFlow(private val description: String) : FlowLogic<SignedTransaction>() {
     override val progressTracker = ProgressTracker()
 
     @Suspendable
