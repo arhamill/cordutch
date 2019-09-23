@@ -6,14 +6,12 @@ Flows:
 * `IssueAssetFlow` - Self-issue an auctionable asset
 * `TransferAssetFlow` - Transfer an auctionable asset to another party
 * `ConsumeAssetFlow` - Consume an auctionable asset with the original issuer
-
-
 * `CreateAuctionFlow` - Create a dutch auction of an asset between a set of bidders at an initial price
 * `DecreaseAuctionFlow` - Decrease the price of an existing auction
 * `BidAuctionFlow` - Bid on an auction, pay the auction owner and receive the asset
 * `EndAuctionFlow` - End the auction without any bid
 
-#TODO
+# TODO
 * Fungible asset support
 * Time-based price decrement
 
