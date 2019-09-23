@@ -14,6 +14,10 @@ import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
 
+/**
+ * Flow for the auction owner to end the given [auctionId] and unlock the associated asset.
+ * This is a terminal operation of the auction.
+ */
 @InitiatingFlow
 @StartableByRPC
 class EndAuctionFlow(val auctionId: UniqueIdentifier) : FlowLogic<SignedTransaction>() {

@@ -15,6 +15,11 @@ import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
 import net.corda.finance.workflows.asset.CashUtils
 
+
+/**
+ * Flow for a given bidder to bid on the [auctionId] and hence purchase the associated asset at the price of the auction at this time.
+ * Also unlocks the asset and transfers the ownership to the initiator of this flow. This is a terminal operation of the auction.
+ */
 @InitiatingFlow
 @StartableByRPC
 class BidAuctionFlow(val auctionId: UniqueIdentifier) : FlowLogic<SignedTransaction>() {

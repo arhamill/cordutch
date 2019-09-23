@@ -15,6 +15,12 @@ import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
 import java.util.*
 
+
+/**
+ * Flow to create a dutch auction of a given [assetId] between a set of [bidders].
+ * Locks the asset from being transferred or consumed for the duration of the auction.
+ * The price starts at [price] and can be decreased by the auction owner.
+ */
 @InitiatingFlow
 @StartableByRPC
 class CreateAuctionFlow(private val assetId: UniqueIdentifier, private val price: Amount<Currency>, private val bidders: List<Party>)

@@ -7,9 +7,10 @@ import net.corda.core.transactions.LedgerTransaction
 import net.corda.finance.contracts.asset.Cash
 import net.corda.finance.contracts.utils.sumCashBy
 
-// ************
-// * Contract *
-// ************
+/**
+ * Contract governing the lifecycle of a dutch auction.
+ * An auction is created then decreased in price until one bidder bids and purchases the auctioned asset at the current price.
+ */
 class AuctionContract : Contract {
     companion object {
         // Used to identify our contract when building a transaction.

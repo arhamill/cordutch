@@ -6,6 +6,10 @@ import net.corda.core.contracts.*
 import net.corda.core.contracts.Requirements.using
 import net.corda.core.transactions.LedgerTransaction
 
+/**
+ * Contract governing the lifecycle of an auctionable asset.
+ * The asset is locked and unlocked to prevent spend during the duration of an auction.
+ */
 class AuctionableAssetContract : Contract {
     companion object {
         // Used to identify our contract when building a transaction.

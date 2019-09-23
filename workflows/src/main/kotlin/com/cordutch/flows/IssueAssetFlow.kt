@@ -11,7 +11,7 @@ import net.corda.core.transactions.TransactionBuilder
 import net.corda.core.utilities.ProgressTracker
 
 /**
- * Flow to self-issue an asset with given description
+ * Flow to self-issue an auctionable asset with given description.
  */
 @InitiatingFlow
 @StartableByRPC

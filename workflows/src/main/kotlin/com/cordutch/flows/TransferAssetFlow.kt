@@ -13,6 +13,9 @@ import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
 
+/**
+ * Flow to transfer a given asset to another party. The asset must be unlocked.
+ */
 @InitiatingFlow
 @StartableByRPC
 class TransferAssetFlow(private val assetId: UniqueIdentifier, private val newOwner: Party) : FlowLogic<SignedTransaction>() {

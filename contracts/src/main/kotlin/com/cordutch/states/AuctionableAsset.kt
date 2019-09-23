@@ -5,6 +5,10 @@ import net.corda.core.contracts.*
 import net.corda.core.identity.AbstractParty
 import net.corda.core.identity.Party
 
+/**
+ * Represents any asset that can be sold via a dutch auction.
+ * The [locked] property blocks the transferal and consumption of the asset to ensure these operations cannot occur during an auction.
+ */
 @BelongsToContract(AuctionableAssetContract::class)
 data class AuctionableAsset(
         val description: String,

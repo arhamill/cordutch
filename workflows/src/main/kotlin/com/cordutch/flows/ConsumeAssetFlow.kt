@@ -16,6 +16,9 @@ import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
 
+/**
+ * Flow to consume the asset with agreement of the original issuer.
+ */
 @InitiatingFlow
 @StartableByRPC
 class ConsumeAssetFlow(private val assetId: UniqueIdentifier) : FlowLogic<SignedTransaction>() {
