@@ -21,7 +21,7 @@ class TransferAssetFlow(private val assetId: UniqueIdentifier, private val newOw
     override fun call(): SignedTransaction {
         val criteria = QueryCriteria.LinearStateQueryCriteria(linearId = listOf(assetId))
         val queryStates = serviceHub.vaultService.queryBy<AuctionableAsset>(criteria).states
-        if (queryStates.size != 1) throw IllegalArgumentException("Auction id does not uniquely refer to an existing auction")
+        if (queryStates.size != 1) throw IllegalArgumentException("Asset id does not uniquely refer to an existing asset")
         val oldAsset = queryStates.single()
 
         val builder = TransactionBuilder(notary = serviceHub.networkMapCache.notaryIdentities.single())

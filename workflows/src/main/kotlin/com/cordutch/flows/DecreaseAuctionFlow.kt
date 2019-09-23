@@ -24,7 +24,7 @@ class DecreaseAuctionFlow(private val auctionId: UniqueIdentifier, private val n
     override fun call(): SignedTransaction {
         val criteria = QueryCriteria.LinearStateQueryCriteria(linearId = listOf(auctionId))
         val queryStates = serviceHub.vaultService.queryBy<AuctionState>(criteria).states
-        if (queryStates.size != 1) throw IllegalArgumentException("Asset id does not uniquely refer to an existing asset")
+        if (queryStates.size != 1) throw IllegalArgumentException("Auction id does not uniquely refer to an existing auction")
         val oldAuction = queryStates.single()
 
         val builder = TransactionBuilder(notary = serviceHub.networkMapCache.notaryIdentities.single())
