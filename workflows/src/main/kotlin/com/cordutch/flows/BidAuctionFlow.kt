@@ -43,9 +43,9 @@ class BidAuctionFlow(val auctionId: UniqueIdentifier) : FlowLogic<SignedTransact
                         Command(AuctionableAssetContract.Commands.Unlock(), ourIdentity.owningKey),
                         StateAndContract(asset.state.data.unlock().withNewOwner(ourIdentity), AuctionableAssetContract.ID)
                 )
-        val (builderWithCash, _) = CashUtils.generateSpend(serviceHub, builder, auctionState.price, ourIdentityAndCert, auctionState.owner)
+        val (builderWithCash, cashKeys) = CashUtils.generateSpend(serviceHub, builder, auctionState.price, ourIdentityAndCert, auctionState.owner)
         builderWithCash.verify(serviceHub)
-        val signedTx = serviceHub.signInitialTransaction(builderWithCash)
+        val signedTx = serviceHub.signInitialTransaction(builderWithCash, cashKeys + ourIdentity.owningKey)
 
         val otherSessions = (auctionState.participants - ourIdentity).map { initiateFlow(it) }
         return subFlow(FinalityFlow(signedTx, otherSessions))
