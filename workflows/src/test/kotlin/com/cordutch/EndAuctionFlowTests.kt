@@ -1,13 +1,16 @@
 package com.cordutch
 
 import com.cordutch.flows.*
+import com.cordutch.states.AuctionResponse
 import com.cordutch.states.AuctionState
 import com.cordutch.states.TransactionAndStateId
-import net.corda.core.contracts.TransactionVerificationException
+import com.r3.corda.lib.tokens.contracts.utilities.issuedBy
+import com.r3.corda.lib.tokens.money.GBP
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.identity.CordaX500Name
 import net.corda.core.utilities.getOrThrow
 import net.corda.finance.POUNDS
+import net.corda.testing.internal.chooseIdentity
 import net.corda.testing.internal.chooseIdentityAndCert
 import net.corda.testing.node.MockNetwork
 import net.corda.testing.node.MockNetworkNotarySpec
@@ -44,12 +47,12 @@ class EndAuctionFlowTests {
         mockNetwork.stopNodes()
     }
 
-    private fun StartedMockNode.createAuction() : TransactionAndStateId {
+    private fun StartedMockNode.createAuction() : AuctionResponse {
         val assetFuture = this.startFlow(IssueAssetFlow("My asset"))
         mockNetwork.runNetwork()
         val assetId = assetFuture.getOrThrow().id
 
-        val future = this.startFlow(CreateAuctionFlow(assetId, 100.POUNDS, listOf(b, c).map { it.info.chooseIdentityAndCert().party }))
+        val future = this.startFlow(CreateAuctionFlow(assetId, 100.GBP issuedBy a.info.chooseIdentity(), listOf(b, c).map { it.info.chooseIdentityAndCert().party }))
         mockNetwork.runNetwork()
         return future.getOrThrow()
     }
@@ -75,9 +78,10 @@ class EndAuctionFlowTests {
 
     @Test
     fun mustBeOwner() {
-        val auctionId = a.createAuction().id
-        val future = b.startFlow(EndAuctionFlow(auctionId))
+        val auctionTx = a.createAuction().stx.tx
+        val auction = auctionTx.outputsOfType<AuctionState>().single()
+        val future = b.startFlow(EndAuctionFlow(auction.linearId))
         mockNetwork.runNetwork()
-        assertFailsWith<TransactionVerificationException> { future.getOrThrow() }
+        assertFailsWith<NoSuchElementException> { future.getOrThrow() }
     }
 }

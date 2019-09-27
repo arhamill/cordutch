@@ -3,9 +3,10 @@ package com.cordutch.flows
 import co.paralleluniverse.fibers.Suspendable
 import com.cordutch.contracts.AuctionContract
 import com.cordutch.contracts.AuctionableAssetContract
+import com.cordutch.states.AuctionResponse
 import com.cordutch.states.AuctionState
 import com.cordutch.states.AuctionableAsset
-import com.cordutch.states.TransactionAndStateId
+import com.r3.corda.lib.tokens.contracts.types.IssuedTokenType
 import net.corda.core.contracts.*
 import net.corda.core.flows.*
 import net.corda.core.identity.Party
@@ -14,7 +15,6 @@ import net.corda.core.node.services.queryBy
 import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
-import java.util.*
 
 
 /**
@@ -24,32 +24,41 @@ import java.util.*
  */
 @InitiatingFlow
 @StartableByRPC
-class CreateAuctionFlow(private val assetId: UniqueIdentifier, private val price: Amount<Currency>, private val bidders: List<Party>)
-    : FlowLogic<TransactionAndStateId>() {
+class CreateAuctionFlow(private val assetId: UniqueIdentifier, private val price: Amount<IssuedTokenType>, private val bidders: List<Party>)
+    : FlowLogic<AuctionResponse>() {
 
     @Suspendable
-    override fun call(): TransactionAndStateId {
+    override fun call(): AuctionResponse {
         val criteria = QueryCriteria.LinearStateQueryCriteria(linearId = listOf(assetId))
         val queryStates = serviceHub.vaultService.queryBy<AuctionableAsset>(criteria).states
         if (queryStates.size != 1) throw IllegalArgumentException("Asset id does not uniquely refer to an existing asset")
         val oldAsset = queryStates.single()
         val lockedAsset = oldAsset.state.data.lock()
+        val assetOwner = serviceHub.identityService.requireWellKnownPartyFromAnonymous(lockedAsset.owner)
+        val otherParties = if (assetOwner == ourIdentity) bidders else bidders + assetOwner
+        val otherSessions = otherParties.map { initiateFlow(it) }
+        val identities = subFlow(SwapIdentitiesFlow(otherSessions))
+        val ourAnonymousIdentity = identities[ourIdentity]!!
 
-        val auction = AuctionState(lockedAsset.linearId, ourIdentity, bidders, price)
+        val auction = AuctionState(lockedAsset.linearId, ourAnonymousIdentity, bidders.map { identities[it]!! }, price)
         val builder = TransactionBuilder(notary = serviceHub.networkMapCache.notaryIdentities.single())
                 .withItems(
                         oldAsset,
                         Command(AuctionableAssetContract.Commands.Lock(), lockedAsset.owner.owningKey),
                         StateAndContract(lockedAsset, AuctionableAssetContract.ID),
-                        Command(AuctionContract.Commands.Create(), auction.participants.map { it.owningKey }),
+                        Command(AuctionContract.Commands.Create(), (auction.participants + auction.bidders).map { it.owningKey }),
                         StateAndContract(auction, AuctionContract.ID)
                 )
         builder.verify(serviceHub)
-        val initialTx = serviceHub.signInitialTransaction(builder, ourIdentity.owningKey)
-        val otherSessions = auction.bidders.map { initiateFlow(it) }
+        val initialTx = if (assetOwner == ourIdentity) {
+            serviceHub.addSignature(serviceHub.signInitialTransaction(builder, ourAnonymousIdentity.owningKey), lockedAsset.owner.owningKey)
+        } else {
+            serviceHub.signInitialTransaction(builder, ourAnonymousIdentity.owningKey)
+        }
+
         val signedTx = subFlow(CollectSignaturesFlow(initialTx, otherSessions))
         val finalisedTx = subFlow(FinalityFlow(signedTx, otherSessions))
-        return TransactionAndStateId(finalisedTx, auction.linearId)
+        return AuctionResponse(finalisedTx, auction.linearId, otherParties)
     }
 }
 
@@ -58,11 +67,11 @@ class CreateAuctionResponderFlow(val flowSession: FlowSession) : FlowLogic<Unit>
 
     @Suspendable
     override fun call() {
+        subFlow(SwapIdentitiesFlow(listOf(flowSession)))
         val signedTransactionFlow = object : SignTransactionFlow(flowSession) {
             override fun checkTransaction(stx: SignedTransaction) = requireThat {
                 val outputs = stx.tx.outputsOfType<AuctionState>()
                 "This must be an auction transaction" using (outputs.size == 1)
-                "We must be a bidder" using (ourIdentity in outputs.single().bidders)
             }
         }
         val signedTx = subFlow(signedTransactionFlow)

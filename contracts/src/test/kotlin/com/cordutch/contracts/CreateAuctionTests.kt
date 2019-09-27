@@ -2,6 +2,8 @@ package com.cordutch.contracts
 
 import com.cordutch.states.AuctionState
 import com.cordutch.states.AuctionableAsset
+import com.r3.corda.lib.tokens.contracts.utilities.issuedBy
+import com.r3.corda.lib.tokens.money.GBP
 import net.corda.core.contracts.UniqueIdentifier
 
 import net.corda.finance.POUNDS
@@ -23,7 +25,7 @@ class CreateAuctionTests {
             assetId = asset.linearId,
             owner = ALICE.party,
             bidders = listOf(BOB.party, CHARLIE.party),
-            price = 10.POUNDS
+            price = 10.GBP issuedBy MEGACORP.party
     )
 
     @Test
@@ -102,7 +104,7 @@ class CreateAuctionTests {
     fun mustHavePriceGreaterThanZero() {
         ledgerServices.ledger {
             transaction {
-                output(AuctionContract.ID, validAuction.copy(price = 0.POUNDS))
+                output(AuctionContract.ID, validAuction.copy(price = 0.GBP issuedBy MEGACORP.party))
                 command(listOf(ALICE, BOB, CHARLIE).map { it.publicKey }, AuctionContract.Commands.Create())
                 input(AuctionableAssetContract.ID, asset.unlock())
                 output(AuctionableAssetContract.ID, asset)

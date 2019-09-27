@@ -1,9 +1,11 @@
 package com.cordutch.contracts
 
 import com.cordutch.states.AuctionState
+import com.r3.corda.lib.tokens.contracts.utilities.issuedBy
+import com.r3.corda.lib.tokens.contracts.utilities.of
+import com.r3.corda.lib.tokens.money.GBP
+import com.r3.corda.lib.tokens.money.USD
 import net.corda.core.contracts.UniqueIdentifier
-import net.corda.finance.DOLLARS
-import net.corda.finance.POUNDS
 import net.corda.testing.node.MockServices
 import net.corda.testing.node.ledger
 import org.junit.Test
@@ -15,7 +17,7 @@ class DecreaseAuctionTests {
             assetId = UniqueIdentifier(),
             owner = ALICE.party,
             bidders = listOf(BOB.party, CHARLIE.party),
-            price = 10.POUNDS
+            price = 10.GBP issuedBy MEGACORP.party
     )
 
     @Test
@@ -23,7 +25,7 @@ class DecreaseAuctionTests {
         ledgerServices.ledger {
             transaction {
                 input(AuctionContract.ID, auction)
-                output(AuctionContract.ID, auction.withNewPrice(auction.price - 1.POUNDS))
+                output(AuctionContract.ID, auction.withNewPrice(auction.price - 1.of(auction.price.token)))
                 command(auction.owner.owningKey, AuctionContract.Commands.Decrease())
                 this.verifies()
             }
@@ -34,7 +36,7 @@ class DecreaseAuctionTests {
     fun mustHaveOneInputState() {
         ledgerServices.ledger {
             transaction {
-                output(AuctionContract.ID, auction.withNewPrice(auction.price - 1.POUNDS))
+                output(AuctionContract.ID, auction.withNewPrice(auction.price - 1.of(auction.price.token)))
                 command(auction.owner.owningKey, AuctionContract.Commands.Decrease())
                 this `fails with` "An auction decrease transaction must have one input state."
             }
@@ -87,7 +89,7 @@ class DecreaseAuctionTests {
         ledgerServices.ledger {
             transaction {
                 input(AuctionContract.ID, auction)
-                output(AuctionContract.ID, auction.withNewPrice(auction.price + 1.POUNDS))
+                output(AuctionContract.ID, auction.withNewPrice(auction.price + 1.of(auction.price.token)))
                 command(auction.owner.owningKey, AuctionContract.Commands.Decrease())
                 this `fails with` "The price must decrease"
             }
@@ -99,9 +101,9 @@ class DecreaseAuctionTests {
         ledgerServices.ledger {
             transaction {
                 input(AuctionContract.ID, auction)
-                output(AuctionContract.ID, auction.withNewPrice(1.DOLLARS))
+                output(AuctionContract.ID, auction.withNewPrice(1.USD issuedBy MEGACORP.party))
                 command(auction.owner.owningKey, AuctionContract.Commands.Decrease())
-                this `fails with` "Token mismatch: GBP vs USD"
+                this `fails with` "Token mismatch"
             }
         }
     }
@@ -111,7 +113,7 @@ class DecreaseAuctionTests {
         ledgerServices.ledger {
             transaction {
                 input(AuctionContract.ID, auction)
-                output(AuctionContract.ID, auction.withNewPrice(0.POUNDS))
+                output(AuctionContract.ID, auction.withNewPrice(0.GBP issuedBy MEGACORP.party))
                 command(auction.owner.owningKey, AuctionContract.Commands.Decrease())
                 this `fails with` "The new price must be greater than zero"
             }
@@ -123,7 +125,7 @@ class DecreaseAuctionTests {
         ledgerServices.ledger {
             transaction {
                 input(AuctionContract.ID, auction)
-                output(AuctionContract.ID, auction.withNewPrice(1.POUNDS))
+                output(AuctionContract.ID, auction.withNewPrice(1.GBP issuedBy MEGACORP.party))
                 command(MINICORP.publicKey, AuctionContract.Commands.Decrease())
                 this `fails with` "The owner must sign"
             }

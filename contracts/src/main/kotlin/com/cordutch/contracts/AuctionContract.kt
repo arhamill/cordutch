@@ -2,10 +2,10 @@ package com.cordutch.contracts
 
 import com.cordutch.states.AuctionState
 import com.cordutch.states.AuctionableAsset
+import com.r3.corda.lib.tokens.contracts.states.FungibleToken
+import com.r3.corda.lib.tokens.contracts.utilities.sumTokenStatesOrZero
 import net.corda.core.contracts.*
 import net.corda.core.transactions.LedgerTransaction
-import net.corda.finance.contracts.asset.Cash
-import net.corda.finance.contracts.utils.sumCashBy
 
 /**
  * Contract governing the lifecycle of a dutch auction.
@@ -41,7 +41,7 @@ class AuctionContract : Contract {
                 tx.commands.requireSingleCommand<AuctionableAssetContract.Commands.Lock>()
                 val asset = tx.outputsOfType<AuctionableAsset>().singleOrNull()
                 "Must reference correct asset" using (output.assetId == asset?.linearId)
-                val requiredSigners = output.participants.map { it.owningKey }.toSet()
+                val requiredSigners = (output.participants + output.bidders).map { it.owningKey }.toSet()
                 "All participants must sign" using (command.signers.toSet() == requiredSigners)
             }
             is Commands.Decrease -> {
@@ -72,10 +72,9 @@ class AuctionContract : Contract {
                     "A bid transaction must have one input state." using (tx.inputsOfType<AuctionState>().size == 1)
                     val input = tx.inputsOfType<AuctionState>().single()
                     "A bid transaction must have no outputs" using tx.outputsOfType<AuctionState>().isEmpty()
-                    val cashOutputs = tx.outputsOfType<Cash.State>()
-                    "There must be output cash paid to the owner." using cashOutputs.any { it.owner == input.owner }
-                    val cashPaid = tx.outputStates.sumCashBy(input.owner).withoutIssuer()
-                    "The exact amount must be paid" using (input.price == cashPaid)
+                    val tokens = tx.outputsOfType<FungibleToken>().filter { it.holder == input.owner }
+                    val paid = tokens.sumTokenStatesOrZero(input.price.token)
+                    "The exact amount must be paid" using (input.price == paid)
                     "The signer must be a bidder" using input.bidders.map { it.owningKey }.containsAll(command.signers)
                     tx.commands.requireSingleCommand<AuctionableAssetContract.Commands.Unlock>()
                     val asset = tx.inputsOfType<AuctionableAsset>().singleOrNull()

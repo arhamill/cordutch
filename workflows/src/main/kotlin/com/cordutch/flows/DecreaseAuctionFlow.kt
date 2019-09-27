@@ -4,6 +4,7 @@ import co.paralleluniverse.fibers.Suspendable
 import com.cordutch.contracts.AuctionContract
 import com.cordutch.states.AuctionState
 import com.cordutch.states.AuctionableAsset
+import com.r3.corda.lib.tokens.contracts.types.IssuedTokenType
 import net.corda.core.contracts.Amount
 import net.corda.core.contracts.Command
 import net.corda.core.contracts.StateAndContract
@@ -21,7 +22,7 @@ import java.util.*
  */
 @InitiatingFlow
 @StartableByRPC
-class DecreaseAuctionFlow(private val auctionId: UniqueIdentifier, private val newPrice: Amount<Currency>)
+class DecreaseAuctionFlow(private val auctionId: UniqueIdentifier, private val newPrice: Amount<IssuedTokenType>)
     : FlowLogic<SignedTransaction>() {
 
     @Suspendable
@@ -34,23 +35,13 @@ class DecreaseAuctionFlow(private val auctionId: UniqueIdentifier, private val n
         val builder = TransactionBuilder(notary = serviceHub.networkMapCache.notaryIdentities.single())
                 .withItems(
                         oldAuction,
-                        Command(AuctionContract.Commands.Decrease(), ourIdentity.owningKey),
+                        Command(AuctionContract.Commands.Decrease(), oldAuction.state.data.owner.owningKey),
                         StateAndContract(oldAuction.state.data.withNewPrice(newPrice), AuctionContract.ID)
                 )
         builder.verify(serviceHub)
-        val signedTx = serviceHub.signInitialTransaction(builder, ourIdentity.owningKey)
-        val otherSessions = oldAuction.state.data.bidders.map { initiateFlow(it) }
+        val signedTx = serviceHub.signInitialTransaction(builder, oldAuction.state.data.owner.owningKey)
 
-        // Bidders don't sign, owner can reduce price as needed
-        return subFlow(FinalityFlow(signedTx, otherSessions))
-    }
-}
-
-@InitiatedBy(DecreaseAuctionFlow::class)
-class DecreaseAuctionResponderFlow(val flowSession: FlowSession) : FlowLogic<Unit>() {
-
-    @Suspendable
-    override fun call() {
-        subFlow(ReceiveFinalityFlow(flowSession))
+        // Inform the bidders via a service later
+        return subFlow(FinalityFlow(signedTx, listOf()))
     }
 }

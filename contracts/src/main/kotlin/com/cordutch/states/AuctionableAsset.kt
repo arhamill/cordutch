@@ -12,15 +12,15 @@ import net.corda.core.identity.Party
 @BelongsToContract(AuctionableAssetContract::class)
 data class AuctionableAsset(
         val description: String,
-        val owner: Party,
+        val owner: AbstractParty,
         val issuer: Party,
         val locked: Boolean = false,
         override val linearId: UniqueIdentifier = UniqueIdentifier()
 ) : LinearState {
-    override val participants: List<Party>
+    override val participants: List<AbstractParty>
         get() = listOf(owner)
 
-    fun withNewOwner(newOwner: Party) : AuctionableAsset {
+    fun withNewOwner(newOwner: AbstractParty) : AuctionableAsset {
         return copy(owner = newOwner)
     }
 

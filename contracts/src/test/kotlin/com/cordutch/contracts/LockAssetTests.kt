@@ -2,6 +2,8 @@ package com.cordutch.contracts
 
 import com.cordutch.states.AuctionState
 import com.cordutch.states.AuctionableAsset
+import com.r3.corda.lib.tokens.contracts.utilities.issuedBy
+import com.r3.corda.lib.tokens.money.GBP
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.finance.POUNDS
 import net.corda.testing.node.MockServices
@@ -21,7 +23,7 @@ class LockAssetTests {
             assetId = validAsset.linearId,
             owner = ALICE.party,
             bidders = listOf(BOB.party, CHARLIE.party),
-            price = 10.POUNDS
+            price = 10.GBP issuedBy MEGACORP.party
     )
 
     @Test
@@ -32,7 +34,7 @@ class LockAssetTests {
                 output(AuctionableAssetContract.ID, validAsset.copy(locked = true))
                 command(validAsset.owner.owningKey, AuctionableAssetContract.Commands.Lock())
                 output(AuctionContract.ID, auction)
-                command(auction.participants.map {it.owningKey}, AuctionContract.Commands.Create())
+                command((auction.participants + auction.bidders).map {it.owningKey}, AuctionContract.Commands.Create())
                 verifies()
             }
         }

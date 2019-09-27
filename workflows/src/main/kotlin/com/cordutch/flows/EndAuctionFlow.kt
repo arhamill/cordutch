@@ -32,18 +32,26 @@ class EndAuctionFlow(val auctionId: UniqueIdentifier) : FlowLogic<SignedTransact
 
         val assetCriteria = QueryCriteria.LinearStateQueryCriteria(linearId = listOf(auctionState.assetId))
         val asset = serviceHub.vaultService.queryBy<AuctionableAsset>(assetCriteria).states.single()
+        val assetOwner = asset.state.data.owner
 
         val builder = TransactionBuilder(notary = serviceHub.networkMapCache.notaryIdentities.single())
                 .withItems(
                         auction,
-                        Command(AuctionContract.Commands.End(), ourIdentity.owningKey),
+                        Command(AuctionContract.Commands.End(), auctionState.owner.owningKey),
                         asset,
-                        Command(AuctionableAssetContract.Commands.Unlock(), ourIdentity.owningKey),
+                        Command(AuctionableAssetContract.Commands.Unlock(), assetOwner.owningKey),
                         StateAndContract(asset.state.data.unlock(), AuctionableAssetContract.ID)
                 )
-        val signedTx = serviceHub.signInitialTransaction(builder)
-        val otherSessions = (auctionState.participants - ourIdentity).map { initiateFlow(it) }
-        return subFlow(FinalityFlow(signedTx, otherSessions))
+        val wellKnownAssetOwner = serviceHub.identityService.requireWellKnownPartyFromAnonymous(assetOwner)
+        val initialTx = serviceHub.signInitialTransaction(builder, auctionState.owner.owningKey)
+        return if (wellKnownAssetOwner == ourIdentity) {
+            val signedTx = serviceHub.addSignature(initialTx, assetOwner.owningKey)
+            subFlow(FinalityFlow(signedTx, listOf()))
+        } else {
+            val otherSession = initiateFlow(wellKnownAssetOwner)
+            val signedTx = subFlow(CollectSignaturesFlow(initialTx, listOf(otherSession)))
+            subFlow(FinalityFlow(signedTx, otherSession))
+        }
     }
 }
 
@@ -52,6 +60,12 @@ class EndAuctionFlowResponder(val flowSession: FlowSession) : FlowLogic<Unit>() 
 
     @Suspendable
     override fun call() {
-        subFlow(ReceiveFinalityFlow(flowSession))
+        val signTransactionFlow = object : SignTransactionFlow(flowSession) {
+            override fun checkTransaction(stx: SignedTransaction) {
+                // put something here
+            }
+        }
+        val signedTx = subFlow(signTransactionFlow)
+        subFlow(ReceiveFinalityFlow(flowSession, signedTx.id))
     }
 }

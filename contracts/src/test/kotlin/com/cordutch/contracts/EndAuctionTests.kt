@@ -2,6 +2,8 @@ package com.cordutch.contracts
 
 import com.cordutch.states.AuctionState
 import com.cordutch.states.AuctionableAsset
+import com.r3.corda.lib.tokens.contracts.utilities.issuedBy
+import com.r3.corda.lib.tokens.money.GBP
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.finance.POUNDS
 import net.corda.testing.node.MockServices
@@ -22,7 +24,7 @@ class EndAuctionTests {
             assetId = asset.linearId,
             owner = ALICE.party,
             bidders = listOf(BOB.party, CHARLIE.party),
-            price = 10.POUNDS
+            price = 10.GBP issuedBy MEGACORP.party
     )
 
     @Test

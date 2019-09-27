@@ -5,6 +5,12 @@ import com.cordutch.contracts.AuctionContract
 import com.cordutch.contracts.AuctionableAssetContract
 import com.cordutch.states.AuctionState
 import com.cordutch.states.AuctionableAsset
+import com.r3.corda.lib.tokens.contracts.internal.schemas.PersistentFungibleToken
+import com.r3.corda.lib.tokens.contracts.states.FungibleToken
+import com.r3.corda.lib.tokens.contracts.utilities.withoutIssuer
+import com.r3.corda.lib.tokens.workflows.flows.move.addMoveFungibleTokens
+import com.r3.corda.lib.tokens.workflows.utilities.ourSigningKeys
+import com.r3.corda.lib.tokens.workflows.utilities.tokenAmountWithIssuerCriteria
 import net.corda.core.contracts.Command
 import net.corda.core.contracts.StateAndContract
 import net.corda.core.contracts.UniqueIdentifier
@@ -13,7 +19,6 @@ import net.corda.core.node.services.queryBy
 import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
-import net.corda.finance.workflows.asset.CashUtils
 
 
 /**
@@ -31,6 +36,7 @@ class BidAuctionFlow(val auctionId: UniqueIdentifier) : FlowLogic<SignedTransact
         if (auctionResults.size != 1) throw IllegalArgumentException("Auction id does not uniquely refer to an existing auction")
         val auction = auctionResults.single()
         val auctionState = auction.state.data
+        val ourAnonymousIdentity = auctionState.bidders.first { serviceHub.identityService.wellKnownPartyFromAnonymous(it) == ourIdentity }
 
         val assetCriteria = QueryCriteria.LinearStateQueryCriteria(linearId = listOf(auctionState.assetId))
         val asset = serviceHub.vaultService.queryBy<AuctionableAsset>(assetCriteria).states.single()
@@ -38,17 +44,20 @@ class BidAuctionFlow(val auctionId: UniqueIdentifier) : FlowLogic<SignedTransact
         val builder = TransactionBuilder(notary = serviceHub.networkMapCache.notaryIdentities.single())
                 .withItems(
                         auction,
-                        Command(AuctionContract.Commands.Bid(), ourIdentity.owningKey),
+                        Command(AuctionContract.Commands.Bid(), ourAnonymousIdentity.owningKey),
                         asset,
-                        Command(AuctionableAssetContract.Commands.Unlock(), ourIdentity.owningKey),
-                        StateAndContract(asset.state.data.unlock().withNewOwner(ourIdentity), AuctionableAssetContract.ID)
+                        Command(AuctionableAssetContract.Commands.Unlock(), ourAnonymousIdentity.owningKey),
+                        StateAndContract(asset.state.data.unlock().withNewOwner(ourAnonymousIdentity), AuctionableAssetContract.ID)
                 )
-        val (builderWithCash, cashKeys) = CashUtils.generateSpend(serviceHub, builder, auctionState.price, ourIdentityAndCert, auctionState.owner)
-        builderWithCash.verify(serviceHub)
-        val signedTx = serviceHub.signInitialTransaction(builderWithCash, cashKeys + ourIdentity.owningKey)
+        val tokenCriteria = tokenAmountWithIssuerCriteria(auctionState.price.token.tokenType, auctionState.price.token.issuer)
+        val builderWithTokens = addMoveFungibleTokens(builder, serviceHub, auctionState.price.withoutIssuer(), auctionState.owner, ourAnonymousIdentity, tokenCriteria)
+        val ourSigningKeys = builderWithTokens.toLedgerTransaction(serviceHub).ourSigningKeys(serviceHub)
+        builderWithTokens.verify(serviceHub)
+        val signedTx = serviceHub.signInitialTransaction(builderWithTokens, ourSigningKeys)
 
-        val otherSessions = (auctionState.participants - ourIdentity).map { initiateFlow(it) }
-        return subFlow(FinalityFlow(signedTx, otherSessions))
+        // The auction owner is responsible for informing the other bidders
+        val otherSession = initiateFlow(serviceHub.identityService.requireWellKnownPartyFromAnonymous(auctionState.owner))
+        return subFlow(FinalityFlow(signedTx, otherSession))
     }
 }
 
