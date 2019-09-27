@@ -1,7 +1,6 @@
 package com.cordutch.contracts
 
 import com.cordutch.states.AuctionState
-import com.cordutch.states.AuctionableAsset
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.finance.DOLLARS
 import net.corda.finance.POUNDS
@@ -13,7 +12,7 @@ class DecreaseAuctionTests {
     private val ledgerServices = MockServices()
 
     private val auction = AuctionState(
-            asset = AuctionableAsset("My asset", ALICE.party, MEGACORP.party),
+            assetId = UniqueIdentifier(),
             owner = ALICE.party,
             bidders = listOf(BOB.party, CHARLIE.party),
             price = 10.POUNDS
@@ -58,7 +57,7 @@ class DecreaseAuctionTests {
         ledgerServices.ledger {
             transaction {
                 input(AuctionContract.ID, auction)
-                output(AuctionContract.ID, auction.copy(asset = auction.asset.withNewOwner(MINICORP.party)))
+                output(AuctionContract.ID, auction.copy(assetId = UniqueIdentifier()))
                 command(auction.owner.owningKey, AuctionContract.Commands.Decrease())
                 this `fails with` "Only the price may change"
             }

@@ -34,7 +34,7 @@ class CreateAuctionFlow(private val assetId: UniqueIdentifier, private val price
         val oldAsset = queryStates.single()
         val lockedAsset = oldAsset.state.data.lock()
 
-        val auction = AuctionState(lockedAsset, ourIdentity, bidders, price)
+        val auction = AuctionState(lockedAsset.linearId, ourIdentity, bidders, price)
         val builder = TransactionBuilder(notary = serviceHub.networkMapCache.notaryIdentities.single())
                 .withItems(
                         oldAsset,

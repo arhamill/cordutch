@@ -64,7 +64,7 @@ class AuctionableAssetContract : Contract {
                 tx.commands.requireSingleCommand<AuctionContract.Commands.Create>()
                 "Must be signed by owner" using (command.signers == listOf(inputAsset.owner.owningKey))
                 "Must have output auction" using (tx.outputsOfType<AuctionState>().size == 1)
-                "Auction must correctly reference this asset" using (tx.outputsOfType<AuctionState>().single().asset == outputAsset)
+                "Auction must correctly reference this asset" using (tx.outputsOfType<AuctionState>().single().assetId == outputAsset.linearId)
             }
             is Commands.Unlock -> {
                 "An unlock transaction must have one input asset" using (tx.inputsOfType<AuctionableAsset>().size == 1)
@@ -80,7 +80,7 @@ class AuctionableAssetContract : Contract {
                 "Must be end or bid" using
                         (auctionCommand is AuctionContract.Commands.End || auctionCommand is AuctionContract.Commands.Bid)
                 "Must have input auction" using (tx.inputsOfType<AuctionState>().size == 1)
-                "Auction must correctly reference this asset" using (tx.inputsOfType<AuctionState>().single().asset == inputAsset)
+                "Auction must correctly reference this asset" using (tx.inputsOfType<AuctionState>().single().assetId == inputAsset.linearId)
             }
         }
     }

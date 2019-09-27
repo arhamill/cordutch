@@ -2,6 +2,7 @@ package com.cordutch.contracts
 
 import com.cordutch.states.AuctionState
 import com.cordutch.states.AuctionableAsset
+import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.internal.packageName
 import net.corda.finance.POUNDS
 import net.corda.finance.contracts.asset.Cash
@@ -21,7 +22,7 @@ class UnlockAssetTests {
     )
 
     private val auction = AuctionState(
-            asset = validAsset,
+            assetId = validAsset.linearId,
             owner = ALICE.party,
             bidders = listOf(BOB.party, CHARLIE.party),
             price = 10.POUNDS
@@ -236,7 +237,7 @@ class UnlockAssetTests {
                 input(AuctionableAssetContract.ID, validAsset)
                 output(AuctionableAssetContract.ID, validAsset.unlock())
                 command(validAsset.owner.owningKey, AuctionableAssetContract.Commands.Unlock())
-                input(AuctionContract.ID, auction.copy(asset = validAsset.withNewOwner(MINICORP.party)))
+                input(AuctionContract.ID, auction.copy(assetId = UniqueIdentifier()))
                 command(auction.owner.owningKey, AuctionContract.Commands.End())
                 this `fails with` "Auction must correctly reference this asset"
             }
@@ -246,7 +247,7 @@ class UnlockAssetTests {
                 input(AuctionableAssetContract.ID, validAsset)
                 output(AuctionableAssetContract.ID, validAsset.unlock().withNewOwner(BOB.party))
                 command(BOB.publicKey, AuctionableAssetContract.Commands.Unlock())
-                input(AuctionContract.ID, auction.copy(asset = validAsset.withNewOwner(MINICORP.party)))
+                input(AuctionContract.ID, auction.copy(assetId = UniqueIdentifier()))
                 command(BOB.publicKey, AuctionContract.Commands.Bid())
                 input(Cash.PROGRAM_ID, cash)
                 output(Cash.PROGRAM_ID, cash.ownedBy(auction.owner))

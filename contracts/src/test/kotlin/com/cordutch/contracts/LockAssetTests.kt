@@ -18,7 +18,7 @@ class LockAssetTests {
     )
 
     private val auction = AuctionState(
-            asset = validAsset.lock(),
+            assetId = validAsset.linearId,
             owner = ALICE.party,
             bidders = listOf(BOB.party, CHARLIE.party),
             price = 10.POUNDS

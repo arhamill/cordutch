@@ -14,7 +14,7 @@ import java.util.*
  */
 @BelongsToContract(AuctionContract::class)
 data class AuctionState(
-        val asset: AuctionableAsset,
+        val assetId: UniqueIdentifier,
         val owner: Party,
         val bidders : List<Party>,
         val price : Amount<Currency>,

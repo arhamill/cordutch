@@ -2,6 +2,7 @@ package com.cordutch.contracts
 
 import com.cordutch.states.AuctionState
 import com.cordutch.states.AuctionableAsset
+import net.corda.core.contracts.UniqueIdentifier
 import net.corda.finance.POUNDS
 import net.corda.testing.node.MockServices
 import net.corda.testing.node.ledger
@@ -18,7 +19,7 @@ class EndAuctionTests {
     )
 
     private val auction = AuctionState(
-            asset = asset,
+            assetId = asset.linearId,
             owner = ALICE.party,
             bidders = listOf(BOB.party, CHARLIE.party),
             price = 10.POUNDS
@@ -97,7 +98,7 @@ class EndAuctionTests {
     fun mustReferenceCorrectAsset() {
         ledgerServices.ledger {
             transaction {
-                input(AuctionContract.ID, auction.copy(asset = asset.withNewOwner(MINICORP.party)))
+                input(AuctionContract.ID, auction.copy(assetId = UniqueIdentifier()))
                 command(auction.owner.owningKey, AuctionContract.Commands.End())
                 input(AuctionableAssetContract.ID, asset)
                 output(AuctionableAssetContract.ID, asset.unlock())

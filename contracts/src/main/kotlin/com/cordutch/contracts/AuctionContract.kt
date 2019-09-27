@@ -40,7 +40,7 @@ class AuctionContract : Contract {
                         (output.price > Amount(0, output.price.token))
                 tx.commands.requireSingleCommand<AuctionableAssetContract.Commands.Lock>()
                 val asset = tx.outputsOfType<AuctionableAsset>().singleOrNull()
-                "Must reference correct asset" using (output.asset == asset)
+                "Must reference correct asset" using (output.assetId == asset?.linearId)
                 val requiredSigners = output.participants.map { it.owningKey }.toSet()
                 "All participants must sign" using (command.signers.toSet() == requiredSigners)
             }
@@ -64,7 +64,7 @@ class AuctionContract : Contract {
                     "The owner must sign" using (listOf(input.owner.owningKey) == command.signers)
                     tx.commands.requireSingleCommand<AuctionableAssetContract.Commands.Unlock>()
                     val asset = tx.inputsOfType<AuctionableAsset>().singleOrNull()
-                    "Must reference correct asset" using (input.asset == asset)
+                    "Must reference correct asset" using (input.assetId == asset?.linearId)
                 }
             }
             is Commands.Bid -> {
@@ -79,7 +79,7 @@ class AuctionContract : Contract {
                     "The signer must be a bidder" using input.bidders.map { it.owningKey }.containsAll(command.signers)
                     tx.commands.requireSingleCommand<AuctionableAssetContract.Commands.Unlock>()
                     val asset = tx.inputsOfType<AuctionableAsset>().singleOrNull()
-                    "Must reference correct asset" using (input.asset == asset)
+                    "Must reference correct asset" using (input.assetId == asset?.linearId)
                 }
             }
         }

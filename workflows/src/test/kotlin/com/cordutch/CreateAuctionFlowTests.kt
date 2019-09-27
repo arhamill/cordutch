@@ -66,7 +66,7 @@ class CreateAuctionFlowTests {
         assert(stx.tx.inputs.single() == StateRef(issueTx.id, 0)) { "Should have asset tx as input" }
         assert(stx.tx.outputsOfType<AuctionableAsset>().single() == asset.lock()) { "Should lock input asset" }
         val auction = stx.tx.outputsOfType<AuctionState>().single()
-        assert(auction.asset == asset.lock()) { "Auction should contain output asset" }
+        assert(auction.assetId == asset.linearId) { "Auction should contain output asset" }
         assert(auction.bidders == bidders) { "Auction should contain correct bidders" }
         assert(auction.owner == owner) { "Auction owner should be initiator" }
         assert(auction.price == 100.POUNDS) { "Auction should have correct price" }

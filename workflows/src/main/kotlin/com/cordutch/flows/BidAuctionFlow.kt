@@ -32,7 +32,7 @@ class BidAuctionFlow(val auctionId: UniqueIdentifier) : FlowLogic<SignedTransact
         val auction = auctionResults.single()
         val auctionState = auction.state.data
 
-        val assetCriteria = QueryCriteria.LinearStateQueryCriteria(linearId = listOf(auctionState.asset.linearId))
+        val assetCriteria = QueryCriteria.LinearStateQueryCriteria(linearId = listOf(auctionState.assetId))
         val asset = serviceHub.vaultService.queryBy<AuctionableAsset>(assetCriteria).states.single()
 
         val builder = TransactionBuilder(notary = serviceHub.networkMapCache.notaryIdentities.single())

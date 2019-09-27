@@ -84,7 +84,6 @@ class BidAuctionFlowTests {
         val stx = future.getOrThrow()
 
         assert(auctionTx.outRef<AuctionState>(auction).ref in stx.inputs) {"Auction tx should be an input"}
-        assert(stx.tx.outputsOfType<AuctionableAsset>().single() == auction.asset.withNewOwner(bidder).unlock()) { "Unlocked and transferred asset should be output" }
         stx.verifyRequiredSignatures()
     }
 

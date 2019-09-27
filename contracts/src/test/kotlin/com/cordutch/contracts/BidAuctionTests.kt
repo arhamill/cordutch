@@ -23,7 +23,7 @@ class BidAuctionTests {
     )
 
     private val validAuction = AuctionState(
-            asset = asset,
+            assetId = asset.linearId,
             owner = ALICE.party,
             bidders = listOf(BOB.party, CHARLIE.party),
             price = 10.POUNDS
@@ -165,7 +165,7 @@ class BidAuctionTests {
     fun mustReferenceCorrectAsset() {
         ledgerServices.ledger {
             transaction {
-                input(AuctionContract.ID, validAuction.copy(asset.copy(linearId = UniqueIdentifier())))
+                input(AuctionContract.ID, validAuction.copy(assetId = UniqueIdentifier()))
                 command(BOB.publicKey, AuctionContract.Commands.Bid())
                 input(AuctionableAssetContract.ID, asset)
                 output(AuctionableAssetContract.ID, asset.unlock().withNewOwner(BOB.party))
