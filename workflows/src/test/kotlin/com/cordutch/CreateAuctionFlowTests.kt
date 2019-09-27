@@ -3,13 +3,13 @@ package com.cordutch
 import com.cordutch.flows.IssueAssetFlow
 import com.cordutch.flows.CreateAuctionFlow
 import com.cordutch.flows.CreateAuctionResponderFlow
+import com.cordutch.states.TransactionAndStateId
 import com.cordutch.states.AuctionState
 import com.cordutch.states.AuctionableAsset
 import net.corda.core.contracts.StateRef
 import net.corda.core.contracts.TransactionVerificationException
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.identity.CordaX500Name
-import net.corda.core.transactions.SignedTransaction
 import net.corda.core.utilities.getOrThrow
 import net.corda.finance.POUNDS
 import net.corda.testing.internal.chooseIdentityAndCert
@@ -47,7 +47,7 @@ class CreateAuctionFlowTests {
         mockNetwork.stopNodes()
     }
 
-    private fun issueAsset(description: String) : SignedTransaction {
+    private fun issueAsset(description: String) : TransactionAndStateId {
         val future = a.startFlow(IssueAssetFlow(description))
         mockNetwork.runNetwork()
         return future.getOrThrow()
@@ -57,12 +57,12 @@ class CreateAuctionFlowTests {
     fun flowReturnsCorrectlyFormedSignedTx() {
         val owner = a.info.chooseIdentityAndCert().party
         val bidders = listOf(b, c).map { it.info.chooseIdentityAndCert().party }
-        val issueTx = issueAsset("A big house")
+        val issueTx = issueAsset("A big house").stx
 
         val asset = issueTx.tx.outputStates.single() as AuctionableAsset
         val future = a.startFlow(CreateAuctionFlow(asset.linearId, 100.POUNDS, bidders))
         mockNetwork.runNetwork()
-        val stx = future.getOrThrow()
+        val stx = future.getOrThrow().stx
         assert(stx.tx.inputs.single() == StateRef(issueTx.id, 0)) { "Should have asset tx as input" }
         assert(stx.tx.outputsOfType<AuctionableAsset>().single() == asset.lock()) { "Should lock input asset" }
         val auction = stx.tx.outputsOfType<AuctionState>().single()
@@ -84,10 +84,8 @@ class CreateAuctionFlowTests {
     @Test
     fun priceMustBePositive() {
         val bidders = listOf(b, c).map { it.info.chooseIdentityAndCert().party }
-        val issueTx = issueAsset("A big house")
-
-        val asset = issueTx.tx.outputStates.single() as AuctionableAsset
-        val future = a.startFlow(CreateAuctionFlow(asset.linearId, 0.POUNDS, bidders))
+        val assetId = issueAsset("A big house").id
+        val future = a.startFlow(CreateAuctionFlow(assetId, 0.POUNDS, bidders))
         mockNetwork.runNetwork()
         assertFailsWith<TransactionVerificationException>("Should fail if price is 0") { future.getOrThrow() }
     }
@@ -95,10 +93,8 @@ class CreateAuctionFlowTests {
     @Test
     fun ownerMustNotBeBidder() {
         val bidders = listOf(a, b, c).map { it.info.chooseIdentityAndCert().party }
-        val issueTx = issueAsset("A big house")
-
-        val asset = issueTx.tx.outputStates.single() as AuctionableAsset
-        val future = a.startFlow(CreateAuctionFlow(asset.linearId, 100.POUNDS, bidders))
+        val assetId = issueAsset("A big house").id
+        val future = a.startFlow(CreateAuctionFlow(assetId, 100.POUNDS, bidders))
         mockNetwork.runNetwork()
         assertFailsWith<TransactionVerificationException>("Should fail if owner is bidder") { future.getOrThrow() }
     }

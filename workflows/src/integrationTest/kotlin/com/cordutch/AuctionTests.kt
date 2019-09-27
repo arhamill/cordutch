@@ -72,9 +72,9 @@ class AuctionTests {
             val bobParty = bob.nodeInfo.chooseIdentity()
             val bobRef = bobParty.ref(OpaqueBytes.of(0))
 
-            val asset = aliceProxy.startFlow(::IssueAssetFlow, "My valuable asset").returnValue.getOrThrow().tx.outputStates.single() as AuctionableAsset
+            val asset = aliceProxy.startFlow(::IssueAssetFlow, "My valuable asset").returnValue.getOrThrow().stx.tx.outputStates.single() as AuctionableAsset
             val bidders = listOf(bob, charlie).map { it.nodeInfo.chooseIdentity() }
-            val auctionId = aliceProxy.startFlow(::CreateAuctionFlow, asset.linearId, 1000.POUNDS, bidders).returnValue.getOrThrow().tx.outputsOfType<AuctionState>().single().linearId
+            val auctionId = aliceProxy.startFlow(::CreateAuctionFlow, asset.linearId, 1000.POUNDS, bidders).returnValue.getOrThrow().id
             bobProxy.startFlow(::CashIssueFlow, 1000.POUNDS, OpaqueBytes.of(0), defaultNotaryIdentity).returnValue.getOrThrow()
             bobProxy.startFlow(::BidAuctionFlow, auctionId).returnValue.getOrThrow()
 

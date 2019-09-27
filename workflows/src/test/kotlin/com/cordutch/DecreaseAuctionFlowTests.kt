@@ -2,11 +2,10 @@ package com.cordutch
 
 import com.cordutch.flows.*
 import com.cordutch.states.AuctionState
-import com.cordutch.states.AuctionableAsset
+import com.cordutch.states.TransactionAndStateId
 import net.corda.core.contracts.TransactionVerificationException
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.identity.CordaX500Name
-import net.corda.core.transactions.SignedTransaction
 import net.corda.core.utilities.getOrThrow
 import net.corda.finance.POUNDS
 import net.corda.testing.internal.chooseIdentityAndCert
@@ -46,19 +45,19 @@ class DecreaseAuctionFlowTests {
         mockNetwork.stopNodes()
     }
 
-    private fun createAuction() : SignedTransaction {
+    private fun createAuction() : TransactionAndStateId {
         val assetFuture = a.startFlow(IssueAssetFlow("My asset"))
         mockNetwork.runNetwork()
-        val asset = assetFuture.getOrThrow().tx.outputStates.single() as AuctionableAsset
+        val assetId = assetFuture.getOrThrow().id
 
-        val future = a.startFlow(CreateAuctionFlow(asset.linearId, 100.POUNDS, listOf(b, c).map { it.info.chooseIdentityAndCert().party }))
+        val future = a.startFlow(CreateAuctionFlow(assetId, 100.POUNDS, listOf(b, c).map { it.info.chooseIdentityAndCert().party }))
         mockNetwork.runNetwork()
         return future.getOrThrow()
     }
 
     @Test
     fun flowReturnsCorrectlyFormedSignedTx() {
-        val auctionTx = createAuction().tx
+        val auctionTx = createAuction().stx.tx
         val auction = auctionTx.outputsOfType<AuctionState>().single()
         val newPrice = auction.price - 10.POUNDS
         val future = a.startFlow(DecreaseAuctionFlow(auction.linearId, newPrice))
@@ -80,8 +79,8 @@ class DecreaseAuctionFlowTests {
 
     @Test
     fun priceMustGoDown() {
-        val auctionTx = createAuction()
-        val auction = auctionTx.tx.outputsOfType<AuctionState>().single()
+        val auctionTx = createAuction().stx.tx
+        val auction = auctionTx.outputsOfType<AuctionState>().single()
         val newPrice = auction.price + 10.POUNDS
         val future = a.startFlow(DecreaseAuctionFlow(auction.linearId, newPrice))
         mockNetwork.runNetwork()
@@ -90,8 +89,8 @@ class DecreaseAuctionFlowTests {
 
     @Test
     fun initiatorMustBeOwner() {
-        val auctionTx = createAuction()
-        val auction = auctionTx.tx.outputsOfType<AuctionState>().single()
+        val auctionTx = createAuction().stx.tx
+        val auction = auctionTx.outputsOfType<AuctionState>().single()
         val newPrice = auction.price - 10.POUNDS
         val future = b.startFlow(DecreaseAuctionFlow(auction.linearId, newPrice))
         mockNetwork.runNetwork()

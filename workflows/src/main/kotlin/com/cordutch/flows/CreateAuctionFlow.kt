@@ -5,6 +5,7 @@ import com.cordutch.contracts.AuctionContract
 import com.cordutch.contracts.AuctionableAssetContract
 import com.cordutch.states.AuctionState
 import com.cordutch.states.AuctionableAsset
+import com.cordutch.states.TransactionAndStateId
 import net.corda.core.contracts.*
 import net.corda.core.flows.*
 import net.corda.core.identity.Party
@@ -24,10 +25,10 @@ import java.util.*
 @InitiatingFlow
 @StartableByRPC
 class CreateAuctionFlow(private val assetId: UniqueIdentifier, private val price: Amount<Currency>, private val bidders: List<Party>)
-    : FlowLogic<SignedTransaction>() {
+    : FlowLogic<TransactionAndStateId>() {
 
     @Suspendable
-    override fun call(): SignedTransaction {
+    override fun call(): TransactionAndStateId {
         val criteria = QueryCriteria.LinearStateQueryCriteria(linearId = listOf(assetId))
         val queryStates = serviceHub.vaultService.queryBy<AuctionableAsset>(criteria).states
         if (queryStates.size != 1) throw IllegalArgumentException("Asset id does not uniquely refer to an existing asset")
@@ -47,7 +48,8 @@ class CreateAuctionFlow(private val assetId: UniqueIdentifier, private val price
         val initialTx = serviceHub.signInitialTransaction(builder, ourIdentity.owningKey)
         val otherSessions = auction.bidders.map { initiateFlow(it) }
         val signedTx = subFlow(CollectSignaturesFlow(initialTx, otherSessions))
-        return subFlow(FinalityFlow(signedTx, otherSessions))
+        val finalisedTx = subFlow(FinalityFlow(signedTx, otherSessions))
+        return TransactionAndStateId(finalisedTx, auction.linearId)
     }
 }
 

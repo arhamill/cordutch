@@ -2,11 +2,10 @@ package com.cordutch
 
 import com.cordutch.flows.*
 import com.cordutch.states.AuctionState
-import com.cordutch.states.AuctionableAsset
+import com.cordutch.states.TransactionAndStateId
 import net.corda.core.contracts.TransactionVerificationException
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.identity.CordaX500Name
-import net.corda.core.transactions.SignedTransaction
 import net.corda.core.utilities.getOrThrow
 import net.corda.finance.POUNDS
 import net.corda.testing.internal.chooseIdentityAndCert
@@ -45,19 +44,19 @@ class EndAuctionFlowTests {
         mockNetwork.stopNodes()
     }
 
-    private fun StartedMockNode.createAuction() : SignedTransaction {
+    private fun StartedMockNode.createAuction() : TransactionAndStateId {
         val assetFuture = this.startFlow(IssueAssetFlow("My asset"))
         mockNetwork.runNetwork()
-        val asset = assetFuture.getOrThrow().tx.outputStates.single() as AuctionableAsset
+        val assetId = assetFuture.getOrThrow().id
 
-        val future = this.startFlow(CreateAuctionFlow(asset.linearId, 100.POUNDS, listOf(b, c).map { it.info.chooseIdentityAndCert().party }))
+        val future = this.startFlow(CreateAuctionFlow(assetId, 100.POUNDS, listOf(b, c).map { it.info.chooseIdentityAndCert().party }))
         mockNetwork.runNetwork()
         return future.getOrThrow()
     }
 
     @Test
     fun flowReturnsCorrectlyFormedSignedTx() {
-        val auctionTx = a.createAuction().tx
+        val auctionTx = a.createAuction().stx.tx
         val auction = auctionTx.outputsOfType<AuctionState>().single()
         val future = a.startFlow(EndAuctionFlow(auction.linearId))
         mockNetwork.runNetwork()
@@ -76,9 +75,8 @@ class EndAuctionFlowTests {
 
     @Test
     fun mustBeOwner() {
-        val auctionTx = a.createAuction().tx
-        val auction = auctionTx.outputsOfType<AuctionState>().single()
-        val future = b.startFlow(EndAuctionFlow(auction.linearId))
+        val auctionId = a.createAuction().id
+        val future = b.startFlow(EndAuctionFlow(auctionId))
         mockNetwork.runNetwork()
         assertFailsWith<TransactionVerificationException> { future.getOrThrow() }
     }

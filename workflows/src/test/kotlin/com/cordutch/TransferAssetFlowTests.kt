@@ -2,10 +2,9 @@ package com.cordutch
 
 import com.cordutch.flows.*
 import com.cordutch.states.AuctionableAsset
-import net.corda.core.contracts.TransactionVerificationException
+import com.cordutch.states.TransactionAndStateId
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.identity.CordaX500Name
-import net.corda.core.transactions.SignedTransaction
 import net.corda.core.utilities.getOrThrow
 import net.corda.testing.internal.chooseIdentityAndCert
 import net.corda.testing.node.MockNetwork
@@ -42,7 +41,7 @@ class TransferAssetFlowTests {
         mockNetwork.stopNodes()
     }
 
-    private fun issueAsset() : SignedTransaction {
+    private fun issueAsset() : TransactionAndStateId {
         val assetFuture = a.startFlow(IssueAssetFlow("My asset"))
         mockNetwork.runNetwork()
         return assetFuture.getOrThrow()
@@ -50,7 +49,7 @@ class TransferAssetFlowTests {
 
     @Test
     fun flowReturnsCorrectlyFormedSignedTx() {
-        val assetTx = issueAsset().tx
+        val assetTx = issueAsset().stx.tx
         val asset = assetTx.outputsOfType<AuctionableAsset>().single()
         val newOwner = b.info.chooseIdentityAndCert().party
 

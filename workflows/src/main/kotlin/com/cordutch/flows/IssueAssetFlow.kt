@@ -3,10 +3,10 @@ package com.cordutch.flows
 import co.paralleluniverse.fibers.Suspendable
 import com.cordutch.contracts.AuctionableAssetContract
 import com.cordutch.states.AuctionableAsset
+import com.cordutch.states.TransactionAndStateId
 import net.corda.core.contracts.Command
 import net.corda.core.contracts.StateAndContract
 import net.corda.core.flows.*
-import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
 import net.corda.core.utilities.ProgressTracker
 
@@ -15,11 +15,11 @@ import net.corda.core.utilities.ProgressTracker
  */
 @InitiatingFlow
 @StartableByRPC
-class IssueAssetFlow(private val description: String) : FlowLogic<SignedTransaction>() {
+class IssueAssetFlow(private val description: String) : FlowLogic<TransactionAndStateId>() {
     override val progressTracker = ProgressTracker()
 
     @Suspendable
-    override fun call() : SignedTransaction {
+    override fun call() : TransactionAndStateId {
         val asset = AuctionableAsset(description, ourIdentity, ourIdentity)
         val builder = TransactionBuilder(notary = serviceHub.networkMapCache.notaryIdentities.single())
                 .withItems(
@@ -29,7 +29,7 @@ class IssueAssetFlow(private val description: String) : FlowLogic<SignedTransact
         builder.verify(serviceHub)
         val signedTx = serviceHub.signInitialTransaction(builder, ourIdentity.owningKey)
 
-        // We are the only participant, no need to send to anyone else
-        return subFlow(FinalityFlow(signedTx, listOf()))
+        val stx = subFlow(FinalityFlow(signedTx, listOf()))
+        return TransactionAndStateId(stx, asset.linearId)
     }
 }

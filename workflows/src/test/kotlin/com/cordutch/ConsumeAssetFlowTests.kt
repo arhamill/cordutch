@@ -45,7 +45,7 @@ class ConsumeAssetFlowTests {
     private fun issueAndTransferAsset() : SignedTransaction {
         val issueFuture = a.startFlow(IssueAssetFlow("My asset"))
         mockNetwork.runNetwork()
-        val assetId = issueFuture.getOrThrow().tx.outputsOfType<AuctionableAsset>().single().linearId
+        val assetId = issueFuture.getOrThrow().id
 
         val transferFuture = a.startFlow(TransferAssetFlow(assetId, b.info.chooseIdentityAndCert().party))
         mockNetwork.runNetwork()

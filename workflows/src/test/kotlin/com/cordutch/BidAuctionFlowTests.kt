@@ -2,14 +2,13 @@ package com.cordutch
 
 import com.cordutch.flows.*
 import com.cordutch.states.AuctionState
-import com.cordutch.states.AuctionableAsset
+import com.cordutch.states.TransactionAndStateId
 import net.corda.core.contracts.Amount
 import net.corda.core.contracts.InsufficientBalanceException
 import net.corda.core.contracts.TransactionVerificationException
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.identity.CordaX500Name
 import net.corda.core.internal.packageName
-import net.corda.core.transactions.SignedTransaction
 import net.corda.core.utilities.OpaqueBytes
 import net.corda.core.utilities.getOrThrow
 import net.corda.finance.POUNDS
@@ -55,12 +54,12 @@ class BidAuctionFlowTests {
         mockNetwork.stopNodes()
     }
 
-    private fun StartedMockNode.createAuction() : SignedTransaction {
+    private fun StartedMockNode.createAuction() : TransactionAndStateId {
         val assetFuture = this.startFlow(IssueAssetFlow("My asset"))
         mockNetwork.runNetwork()
-        val asset = assetFuture.getOrThrow().tx.outputStates.single() as AuctionableAsset
+        val assetId = assetFuture.getOrThrow().id
 
-        val future = this.startFlow(CreateAuctionFlow(asset.linearId, 100.POUNDS, listOf(b, c).map { it.info.chooseIdentityAndCert().party }))
+        val future = this.startFlow(CreateAuctionFlow(assetId, 100.POUNDS, listOf(b, c).map { it.info.chooseIdentityAndCert().party }))
         mockNetwork.runNetwork()
         return future.getOrThrow()
     }
@@ -75,7 +74,7 @@ class BidAuctionFlowTests {
 
     @Test
     fun flowReturnsCorrectlyFormedSignedTx() {
-        val auctionTx = a.createAuction().tx
+        val auctionTx = a.createAuction().stx.tx
         val auction = auctionTx.outputsOfType<AuctionState>().single()
         val bidder = b.info.chooseIdentityAndCert().party
         b.issueCash(auction.price)
@@ -96,7 +95,7 @@ class BidAuctionFlowTests {
 
     @Test
     fun mustIncludeSufficientCash() {
-        val auctionTx = a.createAuction().tx
+        val auctionTx = a.createAuction().stx.tx
         val auction = auctionTx.outputsOfType<AuctionState>().single()
         b.issueCash(auction.price - 10.POUNDS)
         val future = b.startFlow(BidAuctionFlow(auction.linearId))
@@ -106,7 +105,7 @@ class BidAuctionFlowTests {
 
     @Test
     fun mustBeBidder() {
-        val auctionTx = a.createAuction().tx
+        val auctionTx = a.createAuction().stx.tx
         val auction = auctionTx.outputsOfType<AuctionState>().single()
         a.issueCash(auction.price)
         val future = a.startFlow(BidAuctionFlow(auction.linearId))

@@ -38,7 +38,7 @@ class IssueAssetFlowTests {
         val description = "A big house"
         val flow = IssueAssetFlow(description)
         val future = a.startFlow(flow)
-        val stx = future.getOrThrow()
+        val stx = future.getOrThrow().stx
         stx.verifyRequiredSignatures()
         val output = stx.tx.outputStates.single() as AuctionableAsset
         assert(issuer == output.issuer) { "Initiator should be issuer" }
