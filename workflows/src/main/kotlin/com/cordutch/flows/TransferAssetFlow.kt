@@ -26,15 +26,16 @@ class TransferAssetFlow(private val assetId: UniqueIdentifier, private val newOw
         val queryStates = serviceHub.vaultService.queryBy<AuctionableAsset>(criteria).states
         if (queryStates.size != 1) throw IllegalArgumentException("Asset id does not uniquely refer to an existing asset")
         val oldAsset = queryStates.single()
+        val owningKey = oldAsset.state.data.owner.owningKey
 
         val builder = TransactionBuilder(notary = serviceHub.networkMapCache.notaryIdentities.single())
                 .withItems(
                         oldAsset,
-                        Command(AuctionableAssetContract.Commands.Transfer(), ourIdentity.owningKey),
+                        Command(AuctionableAssetContract.Commands.Transfer(), owningKey),
                         StateAndContract(oldAsset.state.data.withNewOwner(newOwner), AuctionableAssetContract.ID)
                 )
         builder.verify(serviceHub)
-        val signedTx = serviceHub.signInitialTransaction(builder, ourIdentity.owningKey)
+        val signedTx = serviceHub.signInitialTransaction(builder, owningKey)
         val otherSession = initiateFlow(newOwner)
 
         // New owner doesn't need to sign

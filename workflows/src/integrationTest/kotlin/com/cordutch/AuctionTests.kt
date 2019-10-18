@@ -32,12 +32,14 @@ class AuctionTests {
     @Test
     fun bidAuctionResolution() {
         val cordutchContracts = setOf(
-                findCordapp("com.cordutch.contracts"),
-                findCordapp("com.cordutch.flows"),
-                findCordapp("com.r3.corda.lib.tokens.contracts"),
-                findCordapp("com.r3.corda.lib.tokens.workflows"),
-                findCordapp("com.r3.corda.lib.tokens.money")
-        )
+                "com.cordutch.contracts",
+                "com.cordutch.flows",
+                "com.cordutch.services",
+                "com.r3.corda.lib.tokens.contracts",
+                "com.r3.corda.lib.tokens.workflows",
+                "com.r3.corda.lib.tokens.money"
+        ).map(::findCordapp)
+
         driver(DriverParameters(startNodesInProcess = true, cordappsForAllNodes = cordutchContracts)) {
             val aliceUser = User("aliceUser", "testPassword1", permissions = setOf(
                     startFlow<IssueTokens>(),

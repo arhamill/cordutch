@@ -56,7 +56,8 @@ class CreateAuctionFlow(private val assetId: UniqueIdentifier, private val price
             serviceHub.signInitialTransaction(builder, ourAnonymousIdentity.owningKey)
         }
 
-        val signedTx = subFlow(CollectSignaturesFlow(initialTx, otherSessions))
+        val myKeys = if (assetOwner == ourIdentity) listOf(ourAnonymousIdentity.owningKey, assetOwner.owningKey) else listOf(ourAnonymousIdentity.owningKey)
+        val signedTx = subFlow(CollectSignaturesFlow(initialTx, otherSessions, myKeys))
         val finalisedTx = subFlow(FinalityFlow(signedTx, otherSessions))
         return AuctionResponse(finalisedTx, auction.linearId, otherParties)
     }

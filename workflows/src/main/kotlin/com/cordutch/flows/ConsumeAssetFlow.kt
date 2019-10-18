@@ -30,14 +30,15 @@ class ConsumeAssetFlow(private val assetId: UniqueIdentifier) : FlowLogic<Signed
         if (queryStates.size != 1) throw IllegalArgumentException("Asset id does not uniquely refer to an existing asset")
         val asset = queryStates.single()
         val issuer = asset.state.data.issuer
+        val owningKey = asset.state.data.owner.owningKey
 
         val builder = TransactionBuilder(notary = serviceHub.networkMapCache.notaryIdentities.single())
                 .withItems(
                         asset,
-                        Command(AuctionableAssetContract.Commands.Consume(), listOf(ourIdentity.owningKey, issuer.owningKey))
+                        Command(AuctionableAssetContract.Commands.Consume(), listOf(owningKey, issuer.owningKey))
                 )
         builder.verify(serviceHub)
-        val initialTx = serviceHub.signInitialTransaction(builder, ourIdentity.owningKey)
+        val initialTx = serviceHub.signInitialTransaction(builder, listOf(owningKey, ourIdentity.owningKey))
         val otherSession = initiateFlow(issuer)
 
         val signedTx = subFlow(CollectSignaturesFlow(initialTx, listOf(otherSession)))

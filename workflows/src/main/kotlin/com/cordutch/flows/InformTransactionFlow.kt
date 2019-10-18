@@ -8,7 +8,7 @@ import net.corda.core.node.StatesToRecord
 import net.corda.core.utilities.unwrap
 
 @InitiatingFlow
-@StartableByRPC
+@StartableByService
 class InformTransactionFlow(val id: SecureHash, val counterParty: Party, val strOrdinal: Int) : FlowLogic<Unit>() {
 
     @Suspendable
