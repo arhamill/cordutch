@@ -25,6 +25,7 @@ import net.corda.testing.internal.chooseIdentity
 import net.corda.testing.node.User
 import net.corda.testing.node.internal.findCordapp
 import org.junit.Test
+import java.time.Instant
 import kotlin.test.assertEquals
 
 class AuctionTests {
@@ -71,7 +72,14 @@ class AuctionTests {
             val bobParty = bob.nodeInfo.chooseIdentity()
             val assetId = aliceProxy.startFlow(::IssueAssetFlow, "My valuable asset").returnValue.getOrThrow().id
             val bidders = listOf(bob, charlie).map { it.nodeInfo.chooseIdentity() }
-            val auctionId = aliceProxy.startFlow(::CreateAuctionFlow, assetId, 1000.GBP issuedBy aliceParty, bidders).returnValue.getOrThrow().id
+            val auctionId = aliceProxy.startFlow(
+                    ::CreateAuctionFlow,
+                    assetId,
+                    1000.GBP issuedBy aliceParty,
+                    bidders,
+                    100.GBP,
+                    30_000L,
+                    Instant.now()).returnValue.getOrThrow().id
             aliceProxy.startFlow(::IssueTokens, listOf(1000.GBP issuedBy aliceParty heldBy bobParty), listOf()).returnValue.getOrThrow()
             bobProxy.startFlow(::BidAuctionFlow, auctionId).returnValue.getOrThrow()
 

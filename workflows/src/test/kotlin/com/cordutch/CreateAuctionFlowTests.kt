@@ -64,7 +64,12 @@ class CreateAuctionFlowTests {
         val issueTx = issueAsset("A big house")
 
         val asset = issueTx.tx.outputStates.single() as AuctionableAsset
-        val future = a.startFlow(CreateAuctionFlow(asset.linearId, 100.GBP issuedBy a.info.chooseIdentity(), bidders))
+        val future = a.startFlow(CreateAuctionFlow(
+                asset.linearId,
+                100.GBP issuedBy a.info.chooseIdentity(),
+                bidders,
+                10.GBP,
+                10_000L))
         mockNetwork.runNetwork()
         val stx = future.getOrThrow().stx
         assert(stx.tx.inputs.single() == StateRef(issueTx.id, 0)) { "Should have asset tx as input" }
@@ -78,7 +83,12 @@ class CreateAuctionFlowTests {
     @Test
     fun assetMustExist() {
         val bidders = listOf(b, c).map { it.info.chooseIdentityAndCert().party }
-        val future = a.startFlow(CreateAuctionFlow(UniqueIdentifier(), 100.GBP issuedBy a.info.chooseIdentity(), bidders))
+        val future = a.startFlow(CreateAuctionFlow(
+                UniqueIdentifier(),
+                100.GBP issuedBy a.info.chooseIdentity(),
+                bidders,
+                1.GBP,
+                60_000))
         mockNetwork.runNetwork()
         assertFailsWith<IllegalArgumentException>("Should fail if asset doesn't exist") { future.getOrThrow() }
     }
@@ -89,7 +99,12 @@ class CreateAuctionFlowTests {
         val issueTx = issueAsset("A big house")
 
         val asset = issueTx.tx.outputStates.single() as AuctionableAsset
-        val future = a.startFlow(CreateAuctionFlow(asset.linearId, 0.GBP issuedBy a.info.chooseIdentity(), bidders))
+        val future = a.startFlow(CreateAuctionFlow(
+                asset.linearId,
+                0.GBP issuedBy a.info.chooseIdentity(),
+                bidders,
+                10.GBP,
+                10_000L))
         mockNetwork.runNetwork()
         assertFailsWith<TransactionVerificationException>("Should fail if price is 0") { future.getOrThrow() }
     }
@@ -100,7 +115,12 @@ class CreateAuctionFlowTests {
         val issueTx = issueAsset("A big house")
 
         val asset = issueTx.tx.outputStates.single() as AuctionableAsset
-        val future = a.startFlow(CreateAuctionFlow(asset.linearId, 100.GBP issuedBy a.info.chooseIdentity(), bidders))
+        val future = a.startFlow(CreateAuctionFlow(
+                asset.linearId,
+                100.GBP issuedBy a.info.chooseIdentity(),
+                bidders + a.info.legalIdentities.first(),
+                10.GBP,
+                10_000L))
         mockNetwork.runNetwork()
         assertFailsWith<TransactionVerificationException>("Should fail if owner is bidder") { future.getOrThrow() }
     }

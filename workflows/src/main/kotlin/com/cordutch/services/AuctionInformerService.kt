@@ -22,22 +22,11 @@ class AuctionInformerService(val services: AppServiceHub) : SingletonSerializeAs
                     val auctionCommand = stx.tx.commands.firstOrNull { it.value is AuctionContract.Commands }
                     if (auctionCommand != null) {
                         when(auctionCommand.value as AuctionContract.Commands) {
-                            is AuctionContract.Commands.Decrease -> handleDecrease(stx.tx)
                             is AuctionContract.Commands.Bid -> handleBid(stx.tx)
                             is AuctionContract.Commands.End -> handleBid(stx.tx)
                         }
                     }
                 }
-    }
-
-    private fun handleDecrease(tx: WireTransaction) {
-        val auction = tx.outputsOfType<AuctionState>().single()
-        if (services.identityService.wellKnownPartyFromAnonymous(auction.owner) in services.myInfo.legalIdentities) {
-            auction.bidders.forEach {
-                val wellKnownBidder = services.identityService.requireWellKnownPartyFromAnonymous(it)
-                services.startFlow(InformTransactionFlow(tx.id, wellKnownBidder, StatesToRecord.ALL_VISIBLE.ordinal))
-            }
-        }
     }
 
     private fun handleBid(tx: WireTransaction) {

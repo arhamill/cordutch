@@ -2,6 +2,7 @@ package com.cordutch.states
 
 import com.cordutch.contracts.AuctionContract
 import com.r3.corda.lib.tokens.contracts.types.IssuedTokenType
+import com.r3.corda.lib.tokens.contracts.types.TokenType
 import net.corda.core.contracts.Amount
 import net.corda.core.contracts.BelongsToContract
 import net.corda.core.contracts.LinearState
@@ -10,6 +11,7 @@ import net.corda.core.identity.AbstractParty
 import net.corda.core.identity.Party
 import net.corda.core.serialization.CordaSerializable
 import net.corda.core.transactions.SignedTransaction
+import java.time.Instant
 
 /**
  * A state representing a Dutch Auction where [owner] is selling an [asset].
@@ -23,6 +25,9 @@ data class AuctionState(
         val owner: AbstractParty,
         val bidders : List<AbstractParty>,
         val price : Amount<IssuedTokenType>,
+        val decrement: Amount<TokenType>,
+        val period: Long,
+        val startTime: Instant = Instant.now(),
         override val linearId: UniqueIdentifier = UniqueIdentifier()
 ) : LinearState {
         override val participants: List<AbstractParty>

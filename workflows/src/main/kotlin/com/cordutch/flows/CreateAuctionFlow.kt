@@ -7,6 +7,7 @@ import com.cordutch.states.AuctionResponse
 import com.cordutch.states.AuctionState
 import com.cordutch.states.AuctionableAsset
 import com.r3.corda.lib.tokens.contracts.types.IssuedTokenType
+import com.r3.corda.lib.tokens.contracts.types.TokenType
 import net.corda.core.contracts.*
 import net.corda.core.flows.*
 import net.corda.core.identity.Party
@@ -15,6 +16,7 @@ import net.corda.core.node.services.queryBy
 import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
+import java.time.Instant
 
 
 /**
@@ -24,8 +26,14 @@ import net.corda.core.transactions.TransactionBuilder
  */
 @InitiatingFlow
 @StartableByRPC
-class CreateAuctionFlow(private val assetId: UniqueIdentifier, private val price: Amount<IssuedTokenType>, private val bidders: List<Party>)
-    : FlowLogic<AuctionResponse>() {
+class CreateAuctionFlow(
+        private val assetId: UniqueIdentifier,
+        private val price: Amount<IssuedTokenType>,
+        private val bidders: List<Party>,
+        private val decrement: Amount<TokenType>,
+        private val period: Long,
+        private val startTime: Instant = Instant.now()
+) : FlowLogic<AuctionResponse>() {
 
     @Suspendable
     override fun call(): AuctionResponse {
@@ -40,7 +48,15 @@ class CreateAuctionFlow(private val assetId: UniqueIdentifier, private val price
         val identities = subFlow(SwapIdentitiesFlow(otherSessions))
         val ourAnonymousIdentity = identities[ourIdentity]!!
 
-        val auction = AuctionState(lockedAsset.linearId, ourAnonymousIdentity, bidders.map { identities[it]!! }, price)
+        val auction = AuctionState(
+                lockedAsset.linearId,
+                ourAnonymousIdentity,
+                bidders.map { identities[it]!! },
+                price,
+                decrement,
+                period,
+                startTime
+        )
         val builder = TransactionBuilder(notary = serviceHub.networkMapCache.notaryIdentities.single())
                 .withItems(
                         oldAsset,

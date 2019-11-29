@@ -24,7 +24,9 @@ class EndAuctionTests {
             assetId = asset.linearId,
             owner = ALICE.party,
             bidders = listOf(BOB.party, CHARLIE.party),
-            price = 10.GBP issuedBy MEGACORP.party
+            price = 10.GBP issuedBy MEGACORP.party,
+            decrement = 1.GBP,
+            period = 1000L
     )
 
     @Test

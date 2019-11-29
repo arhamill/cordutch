@@ -62,7 +62,12 @@ class BidAuctionFlowTests {
         mockNetwork.runNetwork()
         val assetId = assetFuture.getOrThrow().id
 
-        val future = this.startFlow(CreateAuctionFlow(assetId, 100.GBP issuedBy a.info.chooseIdentity(), listOf(b, c).map { it.info.chooseIdentityAndCert().party }))
+        val future = this.startFlow(CreateAuctionFlow(
+                assetId,
+                100.GBP issuedBy a.info.chooseIdentity(),
+                listOf(b, c).map { it.info.chooseIdentityAndCert().party },
+                100.GBP,
+                10_000L))
         mockNetwork.runNetwork()
         return future.getOrThrow()
     }

@@ -13,6 +13,7 @@ import com.r3.corda.lib.tokens.contracts.utilities.of
 import com.r3.corda.lib.tokens.contracts.utilities.withoutIssuer
 import com.r3.corda.lib.tokens.money.GBP
 import com.r3.corda.lib.tokens.money.USD
+import net.corda.core.contracts.TimeWindow
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.internal.packageName
 import net.corda.finance.POUNDS
@@ -37,10 +38,14 @@ class BidAuctionTests {
             assetId = asset.linearId,
             owner = ALICE.party,
             bidders = listOf(BOB.party, CHARLIE.party),
-            price = 10.GBP issuedBy MEGACORP.party
+            price = 10.GBP issuedBy MEGACORP.party,
+            decrement = 1.GBP,
+            period = 1000L
     )
 
-    private val cash = validAuction.price heldBy BOB.party
+    private val cash = 9.GBP issuedBy MEGACORP.party heldBy BOB.party
+
+    private val timeWindow = TimeWindow.fromOnly(validAuction.startTime.plusMillis(1000L))
 
     @Test
     fun validBidVerifies() {
@@ -54,6 +59,7 @@ class BidAuctionTests {
                 input(FungibleTokenContract.contractId, cash)
                 output(FungibleTokenContract.contractId, cash.withNewHolder(validAuction.owner))
                 command(BOB.publicKey, MoveTokenCommand(validAuction.price.token, listOf(2), listOf(1)))
+                timeWindow(timeWindow)
                 verifies()
             }
         }
@@ -69,6 +75,7 @@ class BidAuctionTests {
                 input(FungibleTokenContract.contractId, cash)
                 output(FungibleTokenContract.contractId, cash.withNewHolder(validAuction.owner))
                 command(BOB.publicKey, MoveTokenCommand(validAuction.price.token, listOf(1), listOf(1)))
+                timeWindow(timeWindow)
                 this `fails with` "Required com.cordutch.contracts.AuctionContract.Commands command"
             }
         }
@@ -87,6 +94,7 @@ class BidAuctionTests {
                 input(FungibleTokenContract.contractId, cash)
                 output(FungibleTokenContract.contractId, cash.withNewHolder(validAuction.owner))
                 command(BOB.publicKey, MoveTokenCommand(validAuction.price.token, listOf(2), listOf(2)))
+                timeWindow(timeWindow)
                 this `fails with` "A bid transaction must have no outputs"
             }
         }
@@ -104,14 +112,15 @@ class BidAuctionTests {
                 input(FungibleTokenContract.contractId, cash)
                 output(FungibleTokenContract.contractId, cash.withNewHolder(MINICORP.party))
                 command(BOB.publicKey, MoveTokenCommand(validAuction.price.token, listOf(2), listOf(1)))
-                this `fails with` "The exact amount must be paid"
+                timeWindow(timeWindow)
+                this `fails with` "The time window must be correct"
             }
         }
     }
 
     @Test
     fun mustHaveCorrectPaymentAmount() {
-        val badAmountCash = validAuction.price - 1.of(validAuction.price.token) heldBy BOB.party
+        val badAmountCash = validAuction.price - 5.of(validAuction.price.token) heldBy BOB.party
         val badCurrencyCash = 10.USD issuedBy MEGACORP.party heldBy BOB.party
         ledgerServices.ledger {
             transaction {
@@ -123,7 +132,8 @@ class BidAuctionTests {
                 input(FungibleTokenContract.contractId, badAmountCash)
                 output(FungibleTokenContract.contractId, badAmountCash.withNewHolder(validAuction.owner))
                 command(BOB.publicKey, MoveTokenCommand(validAuction.price.token, listOf(2), listOf(1)))
-                this `fails with` "The exact amount must be paid"
+                timeWindow(timeWindow)
+                this `fails with` "The time window must be correct"
             }
         }
         ledgerServices.ledger {
@@ -136,7 +146,8 @@ class BidAuctionTests {
                 input(FungibleTokenContract.contractId, badCurrencyCash)
                 output(FungibleTokenContract.contractId, badCurrencyCash.withNewHolder(validAuction.owner))
                 command(BOB.publicKey, MoveTokenCommand(validAuction.price.token, listOf(2), listOf(1)))
-                this `fails with` "The exact amount must be paid"
+                timeWindow(timeWindow)
+                this `fails with` "Token mismatch"
             }
         }
     }
@@ -153,6 +164,7 @@ class BidAuctionTests {
                 input(FungibleTokenContract.contractId, cash)
                 output(FungibleTokenContract.contractId, cash.withNewHolder(validAuction.owner))
                 command(BOB.publicKey, MoveTokenCommand(validAuction.price.token, listOf(2), listOf(1)))
+                timeWindow(timeWindow)
                 this `fails with` "The signer must be a bidder"
             }
         }
@@ -167,6 +179,7 @@ class BidAuctionTests {
                 input(FungibleTokenContract.contractId, cash)
                 output(FungibleTokenContract.contractId, cash.withNewHolder(validAuction.owner))
                 command(BOB.publicKey, MoveTokenCommand(validAuction.price.token, listOf(1), listOf(0)))
+                timeWindow(timeWindow)
                 this `fails with` "Required com.cordutch.contracts.AuctionableAssetContract.Commands.Unlock command"
             }
         }
@@ -184,7 +197,25 @@ class BidAuctionTests {
                 input(FungibleTokenContract.contractId, cash)
                 output(FungibleTokenContract.contractId, cash.withNewHolder(validAuction.owner))
                 command(BOB.publicKey, MoveTokenCommand(validAuction.price.token, listOf(2), listOf(1)))
+                timeWindow(timeWindow)
                 this `fails with` "Must reference correct asset"
+            }
+        }
+    }
+
+    @Test
+    fun mustHaveTimeWindow() {
+        ledgerServices.ledger {
+            transaction {
+                input(AuctionContract.ID, validAuction)
+                command(BOB.publicKey, AuctionContract.Commands.Bid())
+                input(AuctionableAssetContract.ID, asset)
+                output(AuctionableAssetContract.ID, asset.unlock().withNewOwner(BOB.party))
+                command(BOB.publicKey, AuctionableAssetContract.Commands.Unlock())
+                input(FungibleTokenContract.contractId, cash)
+                output(FungibleTokenContract.contractId, cash.withNewHolder(validAuction.owner))
+                command(BOB.publicKey, MoveTokenCommand(validAuction.price.token, listOf(2), listOf(1)))
+                `fails with`("The transaction must be time windowed")
             }
         }
     }

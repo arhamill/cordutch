@@ -4,6 +4,7 @@ import com.cordutch.states.AuctionState
 import com.cordutch.states.AuctionableAsset
 import com.r3.corda.lib.tokens.contracts.states.FungibleToken
 import com.r3.corda.lib.tokens.contracts.utilities.sumTokenStatesOrZero
+import com.r3.corda.lib.tokens.contracts.utilities.withoutIssuer
 import net.corda.core.contracts.*
 import net.corda.core.transactions.LedgerTransaction
 
@@ -20,7 +21,6 @@ class AuctionContract : Contract {
     // Used to indicate the transaction's intent.
     interface Commands : CommandData {
         class Create : TypeOnlyCommandData(), Commands
-        class Decrease : TypeOnlyCommandData(), Commands
         class End : TypeOnlyCommandData(), Commands
         class Bid : TypeOnlyCommandData(), Commands
     }
@@ -44,18 +44,6 @@ class AuctionContract : Contract {
                 val requiredSigners = (output.participants + output.bidders).map { it.owningKey }.toSet()
                 "All participants must sign" using (command.signers.toSet() == requiredSigners)
             }
-            is Commands.Decrease -> {
-                requireThat {
-                    "An auction decrease transaction must have one input state." using (tx.inputStates.size == 1)
-                    "An auction decrease transaction must have one output state." using (tx.outputStates.size == 1)
-                    val input = tx.inputStates.single() as AuctionState
-                    val output = tx.outputStates.single() as AuctionState
-                    "Only the price may change" using (output == input.withNewPrice(output.price))
-                    "The price must decrease" using (output.price < input.price)
-                    "The new price must be greater than zero" using (output.price > Amount(0, output.price.token))
-                    "The owner must sign" using (listOf(output.owner.owningKey) == command.signers)
-                }
-            }
             is Commands.End -> {
                 requireThat {
                     "An end auction transaction must have one input state." using (tx.inputsOfType<AuctionState>().size == 1)
@@ -74,7 +62,11 @@ class AuctionContract : Contract {
                     "A bid transaction must have no outputs" using tx.outputsOfType<AuctionState>().isEmpty()
                     val tokens = tx.outputsOfType<FungibleToken>().filter { it.holder == input.owner }
                     val paid = tokens.sumTokenStatesOrZero(input.price.token)
-                    "The exact amount must be paid" using (input.price == paid)
+                    val periods = (input.price - paid).withoutIssuer().quantity / input.decrement.quantity
+                    val expectedTime = input.startTime.toEpochMilli() + (periods * input.period)
+                    val timeWindow = tx.timeWindow
+                    "The transaction must be time windowed" using (timeWindow?.fromTime != null)
+                    "The time window must be correct" using (timeWindow!!.fromTime!!.toEpochMilli() >= expectedTime)
                     "The signer must be a bidder" using input.bidders.map { it.owningKey }.containsAll(command.signers)
                     tx.commands.requireSingleCommand<AuctionableAssetContract.Commands.Unlock>()
                     val asset = tx.inputsOfType<AuctionableAsset>().singleOrNull()

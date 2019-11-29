@@ -9,6 +9,7 @@ import com.r3.corda.lib.tokens.contracts.utilities.heldBy
 import com.r3.corda.lib.tokens.contracts.utilities.issuedBy
 import com.r3.corda.lib.tokens.contracts.utilities.of
 import com.r3.corda.lib.tokens.money.GBP
+import net.corda.core.contracts.TimeWindow
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.internal.packageName
 import net.corda.finance.POUNDS
@@ -32,10 +33,13 @@ class UnlockAssetTests {
             assetId = validAsset.linearId,
             owner = ALICE.party,
             bidders = listOf(BOB.party, CHARLIE.party),
-            price = 10.GBP issuedBy MEGACORP.party
+            price = 10.GBP issuedBy MEGACORP.party,
+            decrement = 1.GBP,
+            period = 1000L
     )
 
     private val cash = auction.price heldBy BOB.party
+    private val timeWindow = TimeWindow.fromOnly(auction.startTime)
 
     @Test
     fun validUnlockVerifies() {
@@ -59,6 +63,7 @@ class UnlockAssetTests {
                 input(FungibleTokenContract.contractId, cash)
                 output(FungibleTokenContract.contractId, cash.withNewHolder(auction.owner))
                 command(BOB.publicKey, MoveTokenCommand(auction.price.token, listOf(2), listOf(1)))
+                timeWindow(timeWindow)
                 verifies()
             }
         }
@@ -84,6 +89,7 @@ class UnlockAssetTests {
                 input(FungibleTokenContract.contractId, cash)
                 output(FungibleTokenContract.contractId, cash.withNewHolder(auction.owner))
                 command(BOB.publicKey, MoveTokenCommand(auction.price.token, listOf(2), listOf(1)))
+                timeWindow(timeWindow)
                 this `fails with` "Must reference correct asset"
             }
         }
@@ -109,6 +115,7 @@ class UnlockAssetTests {
                 input(FungibleTokenContract.contractId, cash)
                 output(FungibleTokenContract.contractId, cash.withNewHolder(auction.owner))
                 command(BOB.publicKey, MoveTokenCommand(auction.price.token, listOf(2), listOf(1)))
+                timeWindow(timeWindow)
                 this `fails with` "An unlock transaction must have one output asset"
             }
         }
@@ -136,6 +143,7 @@ class UnlockAssetTests {
                 input(FungibleTokenContract.contractId, cash)
                 output(FungibleTokenContract.contractId, cash.withNewHolder(auction.owner))
                 command(BOB.publicKey, MoveTokenCommand(auction.price.token, listOf(2), listOf(1)))
+                timeWindow(timeWindow)
                 this `fails with` "The input asset must be locked"
             }
         }
@@ -163,6 +171,7 @@ class UnlockAssetTests {
                 input(FungibleTokenContract.contractId, cash)
                 output(FungibleTokenContract.contractId, cash.withNewHolder(auction.owner))
                 command(BOB.publicKey, MoveTokenCommand(auction.price.token, listOf(2), listOf(1)))
+                timeWindow(timeWindow)
                 this `fails with` "The output asset must be unlocked"
             }
         }
@@ -190,6 +199,7 @@ class UnlockAssetTests {
                 input(FungibleTokenContract.contractId, cash)
                 output(FungibleTokenContract.contractId, cash.withNewHolder(auction.owner))
                 command(BOB.publicKey, MoveTokenCommand(auction.price.token, listOf(2), listOf(1)))
+                timeWindow(timeWindow)
                 this `fails with` "Must be signed by new owner"
             }
         }
@@ -202,9 +212,8 @@ class UnlockAssetTests {
                 input(AuctionableAssetContract.ID, validAsset)
                 output(AuctionableAssetContract.ID, validAsset.unlock())
                 command(validAsset.owner.owningKey, AuctionableAssetContract.Commands.Unlock())
-                input(AuctionContract.ID, auction)
-                output(AuctionContract.ID, auction.copy(price = auction.price - 1.of(auction.price.token)))
-                command(auction.owner.owningKey, AuctionContract.Commands.Decrease())
+                output(AuctionContract.ID, auction)
+                command(auction.owner.owningKey, AuctionContract.Commands.Create())
                 this `fails with` "Must be end or bid"
             }
         }
@@ -232,6 +241,7 @@ class UnlockAssetTests {
                 input(FungibleTokenContract.contractId, cash)
                 output(FungibleTokenContract.contractId, cash.withNewHolder(auction.owner))
                 command(BOB.publicKey, MoveTokenCommand(auction.price.token, listOf(2), listOf(1)))
+                timeWindow(timeWindow)
                 this `fails with` "Must have input auction"
             }
         }
@@ -259,6 +269,7 @@ class UnlockAssetTests {
                 input(FungibleTokenContract.contractId, cash)
                 output(FungibleTokenContract.contractId, cash.withNewHolder(auction.owner))
                 command(BOB.publicKey, MoveTokenCommand(auction.price.token, listOf(2), listOf(1)))
+                timeWindow(timeWindow)
                 this `fails with` "Auction must correctly reference this asset"
             }
         }

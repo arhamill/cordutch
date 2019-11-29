@@ -13,12 +13,14 @@ import com.r3.corda.lib.tokens.workflows.utilities.ourSigningKeys
 import com.r3.corda.lib.tokens.workflows.utilities.tokenAmountWithIssuerCriteria
 import net.corda.core.contracts.Command
 import net.corda.core.contracts.StateAndContract
+import net.corda.core.contracts.TimeWindow
 import net.corda.core.contracts.UniqueIdentifier
 import net.corda.core.flows.*
 import net.corda.core.node.services.queryBy
 import net.corda.core.node.services.vault.QueryCriteria
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
+import java.time.Instant
 
 
 /**
@@ -41,16 +43,21 @@ class BidAuctionFlow(val auctionId: UniqueIdentifier) : FlowLogic<SignedTransact
         val assetCriteria = QueryCriteria.LinearStateQueryCriteria(linearId = listOf(auctionState.assetId))
         val asset = serviceHub.vaultService.queryBy<AuctionableAsset>(assetCriteria).states.single()
 
+        val timeNow = Instant.now()
+        val periods = (timeNow.toEpochMilli() - auctionState.startTime.toEpochMilli()) / auctionState.period
+        val priceNow = auctionState.price.withoutIssuer() - (auctionState.decrement * periods)
+
         val builder = TransactionBuilder(notary = serviceHub.networkMapCache.notaryIdentities.single())
                 .withItems(
                         auction,
                         Command(AuctionContract.Commands.Bid(), ourAnonymousIdentity.owningKey),
                         asset,
                         Command(AuctionableAssetContract.Commands.Unlock(), ourAnonymousIdentity.owningKey),
-                        StateAndContract(asset.state.data.unlock().withNewOwner(ourAnonymousIdentity), AuctionableAssetContract.ID)
+                        StateAndContract(asset.state.data.unlock().withNewOwner(ourAnonymousIdentity), AuctionableAssetContract.ID),
+                        TimeWindow.fromOnly(timeNow)
                 )
         val tokenCriteria = tokenAmountWithIssuerCriteria(auctionState.price.token.tokenType, auctionState.price.token.issuer)
-        val builderWithTokens = addMoveFungibleTokens(builder, serviceHub, auctionState.price.withoutIssuer(), auctionState.owner, ourAnonymousIdentity, tokenCriteria)
+        val builderWithTokens = addMoveFungibleTokens(builder, serviceHub, priceNow, auctionState.owner, ourAnonymousIdentity, tokenCriteria)
         val ourSigningKeys = builderWithTokens.toLedgerTransaction(serviceHub).ourSigningKeys(serviceHub)
         builderWithTokens.verify(serviceHub)
         val signedTx = serviceHub.signInitialTransaction(builderWithTokens, ourSigningKeys)
