@@ -51,6 +51,9 @@ dependencies {
 
     // CorDapp dependencies.
     cordapp project(":contracts")
+    compile("io.bluebank.braid:braid-corda:$braid_version") {
+        exclude group: 'javax.validation', module: 'validation-api'
+    }
 }
 
 task integrationTest(type: Test, dependsOn: []) {

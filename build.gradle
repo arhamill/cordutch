@@ -13,6 +13,7 @@ buildscript {
         corda_platform_version = '4'.toInteger()
         tokens_release_version = '1.0'
         tokens_release_group = 'com.r3.corda.lib.tokens'
+        braid_version = '4.1.1-patch-01'
     }
 
     repositories {
@@ -57,6 +58,9 @@ allprojects {
         // This makes the JAR's SHA-256 hash repeatable.
         preserveFileTimestamps = false
         reproducibleFileOrder = true
+        exclude '**/com.fasterxml.jackson.*'
+        exclude '**/io.netty.versions.properties'
+        exclude '**/*.txt'
     }
 }
 
@@ -69,6 +73,12 @@ sourceSets {
         resources {
             srcDir rootProject.file("config/dev")
         }
+    }
+}
+
+configurations {
+    cordutchDrivers {
+        transitive = false
     }
 }
 
@@ -91,6 +101,8 @@ dependencies {
     cordaCompile "org.apache.logging.log4j:log4j-slf4j-impl:${log4j_version}"
     cordaCompile "org.apache.logging.log4j:log4j-web:${log4j_version}"
     cordaCompile "org.slf4j:jul-to-slf4j:$slf4j_version"
+
+    cordutchDrivers "javax.validation:validation-api:1.1.0.Final"
 }
 
 cordapp {

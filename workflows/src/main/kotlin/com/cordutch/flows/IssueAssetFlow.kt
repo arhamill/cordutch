@@ -6,10 +6,7 @@ import com.cordutch.states.AuctionableAsset
 import net.corda.core.contracts.Command
 import net.corda.core.contracts.StateAndContract
 import net.corda.core.contracts.UniqueIdentifier
-import net.corda.core.flows.FinalityFlow
-import net.corda.core.flows.FlowLogic
-import net.corda.core.flows.InitiatingFlow
-import net.corda.core.flows.StartableByRPC
+import net.corda.core.flows.*
 import net.corda.core.serialization.CordaSerializable
 import net.corda.core.transactions.SignedTransaction
 import net.corda.core.transactions.TransactionBuilder
@@ -18,8 +15,8 @@ import net.corda.core.utilities.ProgressTracker
 /**
  * Flow to self-issue an auctionable asset with given description.
  */
-@InitiatingFlow
 @StartableByRPC
+@StartableByService
 class IssueAssetFlow(private val description: String) : FlowLogic<AssetResponse>() {
     override val progressTracker = ProgressTracker()
 
