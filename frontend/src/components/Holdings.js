@@ -5,21 +5,22 @@ import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 
-function Assets(props) { return (
+function Holdings(props) {
+    return (
         <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>ID</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell>Status</TableCell>
+                <TableCell>Value</TableCell>
+                <TableCell>Currency</TableCell>
+                <TableCell>Issuer</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {props.assets.map(asset => (
-                <TableRow key={asset.linearId.id}>
-                  <TableCell>{asset.linearId.id}</TableCell>
-                  <TableCell>{asset.description}</TableCell>
-                  <TableCell>{asset.locked ? 'Under auction' : 'Unlocked'}</TableCell>
+              {props.holdings.map(holding => (
+                <TableRow key={holding}>
+                  <TableCell>{holding.quantity * holding.displayTokenSize}</TableCell>
+                  <TableCell>{holding.token.tokenIdentifier}</TableCell>
+                  <TableCell>{holding.token.issuer.name}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -27,4 +28,4 @@ function Assets(props) { return (
       )
 }
 
-export default Assets
+export default Holdings
