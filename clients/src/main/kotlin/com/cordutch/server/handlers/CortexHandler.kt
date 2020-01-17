@@ -19,11 +19,20 @@ import org.springframework.web.reactive.function.server.ServerResponse.ok
 import org.springframework.web.reactive.function.server.body
 import reactor.core.publisher.Mono
 import rx.RxReactiveStreams.toPublisher
+import rx.Single
 
 @Component
 class CortexHandler(rpc: NodeRPCConnection) {
 
     private val proxy = rpc.proxy
+
+    fun snapshot(request: ServerRequest): Mono<ServerResponse> = request.bodyToMono(String::class.java).flatMap {
+        val clazz = Class.forName(it).asSubclass(ContractState::class.java) ?: throw IllegalArgumentException("Must be contract state")
+        ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(toPublisher(Single.just(proxy.vaultQuery(clazz).states)),
+                        ParameterizedTypeReference.forType(List::class.java))
+    }
 
     fun updates(request: ServerRequest): Mono<ServerResponse> = request.bodyToMono(String::class.java).flatMap {
         val clazz = Class.forName(it).asSubclass(ContractState::class.java) ?: throw IllegalArgumentException("Must be contract state")
@@ -34,7 +43,12 @@ class CortexHandler(rpc: NodeRPCConnection) {
                         ParameterizedTypeReference.forType(clazz))
     }
 
-    fun tokens(request: ServerRequest): Mono<ServerResponse> = ok()
+    fun tokenSnapshot(request: ServerRequest): Mono<ServerResponse> = ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(toPublisher(Single.just(proxy.vaultQuery(FungibleToken::class.java).states.sumTokens())),
+                        ParameterizedTypeReference.forType(List::class.java))
+
+    fun tokenUpdates(request: ServerRequest): Mono<ServerResponse> = ok()
             .contentType(MediaType.TEXT_EVENT_STREAM)
             .body(
                     toPublisher(proxy.vaultTrackByCriteria(FungibleToken::class.java, QueryCriteria.VaultQueryCriteria(status = Vault.StateStatus.ALL)).updates.map {
@@ -42,7 +56,7 @@ class CortexHandler(rpc: NodeRPCConnection) {
                                 consumed = it.consumed.sumTokens(),
                                 produced = it.produced.sumTokens()
                         )
-                    }), ParameterizedTypeReference.forType<TokenUpdate>(TokenUpdate::class.java)
+                    }), ParameterizedTypeReference.forType(TokenUpdate::class.java)
             )
 
     fun Collection<StateAndRef<FungibleToken>>.sumTokens() = map { it.state.data }.groupBy { it.issuedTokenType }.values.map {
