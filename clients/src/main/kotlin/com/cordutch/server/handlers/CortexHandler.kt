@@ -28,14 +28,14 @@ class CortexHandler(rpc: NodeRPCConnection) {
     fun updates(request: ServerRequest): Mono<ServerResponse> = request.bodyToMono(String::class.java).flatMap {
         val clazz = Class.forName(it).asSubclass(ContractState::class.java) ?: throw IllegalArgumentException("Must be contract state")
         ok()
-                .contentType(MediaType.APPLICATION_STREAM_JSON)
+                .contentType(MediaType.TEXT_EVENT_STREAM)
                 .body(toPublisher(
                         proxy.vaultTrackByCriteria(clazz, QueryCriteria.VaultQueryCriteria(status = Vault.StateStatus.ALL)).updates),
                         ParameterizedTypeReference.forType(clazz))
     }
 
     fun tokens(request: ServerRequest): Mono<ServerResponse> = ok()
-            .contentType(MediaType.APPLICATION_STREAM_JSON)
+            .contentType(MediaType.TEXT_EVENT_STREAM)
             .body(
                     toPublisher(proxy.vaultTrackByCriteria(FungibleToken::class.java, QueryCriteria.VaultQueryCriteria(status = Vault.StateStatus.ALL)).updates.map {
                         TokenUpdate(
