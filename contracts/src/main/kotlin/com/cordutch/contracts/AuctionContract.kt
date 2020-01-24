@@ -28,7 +28,7 @@ class AuctionContract : Contract {
     // A transaction is valid if the verify() function of the contract of all the transaction's input and output states
     // does not throw an exception.
     override fun verify(tx: LedgerTransaction) {
-        val command = tx.commands.requireSingleCommand <Commands>()
+        val command = tx.commands.requireSingleCommand<Commands>()
         when(command.value) {
             is Commands.Create -> requireThat {
                 "No auction inputs should be consumed when creating an auction" using tx.inputsOfType<AuctionState>().isEmpty()
