@@ -2,13 +2,15 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
-import { AssetProvider, TokensProvider } from './context'
+import { AssetProvider, TokensProvider, AuctionProvider } from './context'
 import * as serviceWorker from './serviceWorker';
 
 ReactDOM.render(
     <TokensProvider>
     <AssetProvider>
+    <AuctionProvider>
         <App />
+    </AuctionProvider>
     </AssetProvider>
     </TokensProvider>
 , document.getElementById('root'));
