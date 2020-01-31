@@ -1,4 +1,4 @@
-import { createTokensContext, createStateContext } from './cortex/cortex'
+import { createTokensContext, createStateContext } from '@arhamill/cortex'
 
 export const { tokensContext, TokensProvider } = createTokensContext('http://localhost:10055')
 

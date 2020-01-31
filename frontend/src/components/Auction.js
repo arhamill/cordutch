@@ -20,8 +20,6 @@ const Auction = ({data}) => {
             <TableCell>{timeData.remaining}</TableCell>
         </TableRow>
       )
-
-      return null
 }
 
 const calculateTimeData = auction => {
