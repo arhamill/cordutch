@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@arhamill/cortex@1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@arhamill/cortex/-/cortex-1.0.0.tgz#8f91b9743d304731465070357787c699a1ff711d"
-  integrity sha512-7opHwAbwhWYE+dGqEKy/iiN3KC3a3tq9vnqhAzyLl6UTmq62zmw6iuNRgKk0k0ZpE5z7xK/Wek6f+fQNpgzKCw==
+"@arhamill/cortex@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@arhamill/cortex/-/cortex-1.1.0.tgz#86576c3330e43624900ba21925d9d2e21d3cafb6"
+  integrity sha512-wJPN8X70+gS68Tev3m4y85b3Iot3DQBCpwUI4sJ1TUxKZ7n64fUJ7XrpeuTwKYeRzjOqHjB86zQZ4UyzKIRpFA==
   dependencies:
     axios "^0.19.2"
     sse.js "^0.4.4"
